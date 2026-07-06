@@ -39,6 +39,7 @@ function processRequest(e) {
       case 'getStudentByLine': return apiGetStudentByLine(p.line);
       case 'linkLine':         return apiLinkLine(p.line, sid, p.name);
       case 'lineLogin':        return apiLineLogin(p.line, p.name);
+      case 'cleanup':          return apiCleanup(p.key);
       case 'ping':           return { ok: true, time: new Date() };
       default:               return { error: 'ไม่รู้จัก action: ' + action };
     }
@@ -261,12 +262,39 @@ function apiGetStudentByLine(lineUid) {
   return s;
 }
 
+// ถอดชื่อที่ส่งมาแบบ Base64 (เลี่ยงบั๊ก Apps Script ที่ถอดภาษาไทยใน URL ผิด)
+function decodeName(b64) {
+  if (!b64) return '';
+  try { return Utilities.newBlob(Utilities.base64Decode(b64)).getDataAsString('UTF-8'); }
+  catch (e) { return b64; }
+}
+
+// ตั้ง/อัปเดตชื่อนักเรียน (เผื่อของเดิมเพี้ยน)
+function setStudentName(sid, name) {
+  const sheet = SS.getSheetByName('Students');
+  const data = sheet.getDataRange().getValues();
+  const idCol = data[0].indexOf('student_id');
+  const nameCol = data[0].indexOf('full_name');
+  const nickCol = data[0].indexOf('nickname');
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(sid)) {
+      if (nameCol > -1) sheet.getRange(i + 1, nameCol + 1).setValue(name);
+      if (nickCol > -1) sheet.getRange(i + 1, nickCol + 1).setValue(name);
+      return;
+    }
+  }
+}
+
 // สมัคร/เข้าระบบด้วย LINE อัตโนมัติ — ใช้ LINE userId เป็นรหัสนักเรียนเลย
-// ครั้งแรก: สร้างนักเรียนใหม่จากชื่อ LINE / ครั้งต่อไป: คืนข้อมูลเดิม
-function apiLineLogin(lineUid, name) {
+// ครั้งแรก: สร้างนักเรียนใหม่จากชื่อ LINE / ครั้งต่อไป: อัปเดตชื่อให้ถูกแล้วเข้า
+function apiLineLogin(lineUid, nameB64) {
   if (!lineUid) return { error: 'ไม่พบ LINE ID' };
+  const name = decodeName(nameB64);
   let s = apiGetStudent(lineUid);
-  if (!s.error) return s;                       // เคยสมัครแล้ว -> เข้าเลย
+  if (!s.error) {                               // เคยสมัครแล้ว
+    if (name) setStudentName(lineUid, name);    // ซ่อมชื่อที่เคยเพี้ยน
+    return apiGetStudent(lineUid);
+  }
   const sheet = SS.getSheetByName('Students');
   const headers = sheet.getDataRange().getValues()[0];
   const row = headers.map(h => {
@@ -280,6 +308,27 @@ function apiLineLogin(lineUid, name) {
   });
   sheet.appendRow(row);
   return apiGetStudent(lineUid);
+}
+
+// ล้างข้อมูลจำลอง/ทดสอบ (STD00x + แถวทดสอบ) — เรียกครั้งเดียว
+function apiCleanup(key) {
+  if (key !== 'smartnano2026') return { error: 'unauthorized' };
+  const isTest = id => /^STD\d+$/i.test(id) || /^(Utest|Uenctest|Uabc|TESTUID)/.test(id);
+  let removed = 0;
+  const sheet = SS.getSheetByName('Students');
+  const data = sheet.getDataRange().getValues();
+  const idCol = data[0].indexOf('student_id');
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (isTest(String(data[i][idCol]))) { sheet.deleteRow(i + 1); removed++; }
+  }
+  const lu = SS.getSheetByName('LineUsers');
+  if (lu) {
+    const ld = lu.getDataRange().getValues();
+    for (let i = ld.length - 1; i >= 1; i--) {
+      if (isTest(String(ld[i][0]))) lu.deleteRow(i + 1);
+    }
+  }
+  return { removed };
 }
 
 // ผูก LINE คนนี้เข้ากับรหัสนักเรียน (ทำครั้งเดียวตอนเข้าครั้งแรก)

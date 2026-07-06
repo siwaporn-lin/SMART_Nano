@@ -87,7 +87,9 @@ function fallbackNoLine() {
 
 // รู้จัก LINE userId แล้ว -> สมัคร/เข้าระบบอัตโนมัติด้วยชื่อ LINE
 function resolveLineUser(p) {
-  callAPI('lineLogin', { line: p.userId, name: p.displayName || '' }, function(r) {
+  var nameB64 = '';
+  try { nameB64 = btoa(unescape(encodeURIComponent(p.displayName || ''))); } catch(e) { nameB64 = ''; }
+  callAPI('lineLogin', { line: p.userId, name: nameB64 }, function(r) {
     if (r && r.student_id) {
       try { localStorage.setItem('smart_sid', r.student_id); } catch(e) {}
       showProfile(r.student_id, p);
