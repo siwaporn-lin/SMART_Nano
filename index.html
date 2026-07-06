@@ -72,8 +72,11 @@ function initAuth() {
         lineProfile = p;
         resolveLineUser(p);
       }).catch(fallbackNoLine);
+    } else if (liff.isInClient && liff.isInClient()) {
+      // อยู่ในแอป LINE แต่ยังไม่ล็อกอิน -> บังคับล็อกอิน LINE ทันที
+      liff.login();
     } else {
-      // อยู่นอก LINE และยังไม่ได้ล็อกอิน
+      // เบราว์เซอร์ปกติ (นอก LINE) และยังไม่ได้ล็อกอิน
       var sid = getSid();
       if (sid) { showProfile(sid); } else { showLineLogin(); }
     }
