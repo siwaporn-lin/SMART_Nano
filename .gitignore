@@ -1,0 +1,12 @@
+# ระบบปฏิบัติการ
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# โปรแกรมแก้ไขโค้ด
+.vscode/
+.idea/
+
+# ไฟล์ชั่วคราว
+*.log
+*.tmp

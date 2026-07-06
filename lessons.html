@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทเรียน</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>📚 บทเรียนนาโนเลิร์นนิ่ง</h1><p>เลือกชุดการเรียนรู้ที่ต้องการ</p></div>
+<div class="container" id="lessonList"><div class="loading">⏳ กำลังโหลดบทเรียน...</div></div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+var SID = '';
+window.addEventListener('DOMContentLoaded', function() {
+  SID = getSid();
+  if (!SID) { document.getElementById('lessonList').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
+  buildNav('lessons', SID);
+  callAPI('getLessons', null, render);
+});
+function render(lessons) {
+  var el = document.getElementById('lessonList');
+  if (lessons.error || !lessons.length) { el.innerHTML='<div class="card">ยังไม่มีบทเรียน</div>'; return; }
+  el.innerHTML = '';
+  for (var i=0;i<lessons.length;i++) {
+    var l = lessons[i];
+    var html = '<div class="card"><h2>ชุดที่ '+l.lesson_no+': '+l.lesson_name+'</h2>';
+    html += '<p style="font-size:0.85rem;color:#666;">'+(l.description||'')+'</p>';
+    if (l.material_url) html += '<a class="btn gray" href="'+l.material_url+'" target="_blank">📄 ใบความรู้</a>';
+    if (l.video_url) html += '<a class="btn gray" href="'+l.video_url+'" target="_blank">🎬 Video</a>';
+    if (l.infographic_url) html += '<a class="btn gray" href="'+l.infographic_url+'" target="_blank">📖 eBook</a>';
+    html += '<a class="btn green" href="quiz.html?sid='+SID+'&quiz='+l.quiz_id+'">✏️ ทำ Quiz</a></div>';
+    el.innerHTML += html;
+  }
+}
+</script>
+</body>
+</html>

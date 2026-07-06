@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>อันดับ</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>🏆 ตารางอันดับ</h1><p>ใครสะสมคะแนนได้มากที่สุด</p></div>
+<div class="container" id="lbList"><div class="loading">⏳ กำลังโหลดอันดับ...</div></div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+var SID = '';
+window.addEventListener('DOMContentLoaded', function() {
+  SID = getSid();
+  if (!SID) { document.getElementById('lbList').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
+  buildNav('leaderboard', SID);
+  callAPI('getLeaderboard', null, render);
+});
+function render(lb) {
+  var el = document.getElementById('lbList');
+  if (lb.error || !lb.length) { el.innerHTML='<div class="card">ยังไม่มีข้อมูล</div>'; return; }
+  el.innerHTML = '';
+  var medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
+  for (var i=0;i<lb.length;i++) {
+    var s = lb[i];
+    var cls = s.rank <= 3 ? 'top'+s.rank : '';
+    var me = s.student_id === SID ? 'me' : '';
+    var html = '<div class="lb-row '+cls+' '+me+'"><div class="lb-rank">'+(medals[s.rank]||s.rank)+'</div>';
+    html += '<div class="lb-name">'+s.full_name+' '+(me?'(คุณ)':'')+'<br><span style="font-size:0.7rem;color:#999;">🎖️ '+s.total_badges+' | ✅ '+s.total_quiz_passed+' Quiz | 📍 '+s.checkins+'</span></div>';
+    html += '<div class="lb-points">'+s.total_points+'</div></div>';
+    el.innerHTML += html;
+  }
+}
+</script>
+</body>
+</html>

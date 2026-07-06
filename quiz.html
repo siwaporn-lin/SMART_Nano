@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>✏️ Quiz ประกันภัย</h1><p id="quizTitle">กำลังโหลด...</p></div>
+<div class="container"><div id="quizArea"><div class="loading">⏳ กำลังโหลดข้อสอบ...</div></div><div id="resultArea" style="display:none;"></div></div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+var SID = '';
+var QUIZ_ID = new URLSearchParams(window.location.search).get('quiz') || 'Q01';
+var answers = {};
+window.addEventListener('DOMContentLoaded', function() {
+  SID = getSid();
+  if (!SID) { document.getElementById('quizArea').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
+  document.getElementById('quizTitle').textContent = 'ชุดข้อสอบ ' + QUIZ_ID;
+  callAPI('getQuiz', { quizId: QUIZ_ID }, render);
+});
+function render(questions) {
+  var el = document.getElementById('quizArea');
+  if (questions.error || !questions.length) { el.innerHTML='<div class="card">ยังไม่มีข้อสอบในชุดนี้</div>'; return; }
+  el.innerHTML = '';
+  for (var i=0;i<questions.length;i++) {
+    var q = questions[i];
+    var html = '<div class="card quiz-q"><div class="q-text">'+q.question_no+'. '+q.question+'</div>';
+    var letters = ['a','b','c','d'];
+    for (var j=0;j<letters.length;j++) { var c=letters[j]; html += '<label class="quiz-choice" id="q'+q.question_no+c+'" onclick="pick('+q.question_no+',\''+c+'\')">'+c.toUpperCase()+'. '+q['choice_'+c]+'</label>'; }
+    html += '</div>';
+    el.innerHTML += html;
+  }
+  el.innerHTML += '<button class="btn green" onclick="submitQuiz()">📤 ส่งคำตอบ</button>';
+}
+function pick(qNo, choice) {
+  answers[String(qNo)] = choice;
+  var letters = ['a','b','c','d'];
+  for (var j=0;j<letters.length;j++) { document.getElementById('q'+qNo+letters[j]).classList.remove('selected'); }
+  document.getElementById('q'+qNo+choice).classList.add('selected');
+}
+function submitQuiz() {
+  var totalQ = document.querySelectorAll('.quiz-q').length;
+  if (Object.keys(answers).length < totalQ) { if (!confirm('ยังตอบไม่ครบทุกข้อ ต้องการส่งเลยหรือไม่?')) return; }
+  document.getElementById('quizArea').innerHTML = '<div class="loading">⏳ กำลังตรวจคำตอบ...</div>';
+  callAPI('submitQuiz', { student: SID, quizId: QUIZ_ID, answers: JSON.stringify(answers) }, showResult);
+}
+function showResult(r) {
+  document.getElementById('quizArea').style.display = 'none';
+  var el = document.getElementById('resultArea');
+  el.style.display = 'block';
+  if (r.error) { el.innerHTML='<div class="card">'+r.error+'</div>'; return; }
+  var html = '<div class="card result-box"><div class="big">'+(r.passed?'🎉':'💪')+'</div>';
+  html += '<div class="score">'+r.score+'/'+r.total+'</div>';
+  html += '<p>'+r.percent+'% — '+(r.passed?'ผ่านแล้ว! เก่งมาก':'ยังไม่ผ่าน ลองใหม่อีกครั้งนะ')+'</p>';
+  if (r.earnedPoints) html += '<p style="color:#27ae60;margin-top:6px;">+'+r.earnedPoints+' คะแนน 🎯</p>';
+  html += '<p style="font-size:0.8rem;color:#999;margin-top:6px;">ครั้งที่ '+r.attempt+'</p>';
+  html += '<a class="btn" href="lessons.html?sid='+SID+'">📚 กลับไปบทเรียน</a>';
+  if (!r.passed) html += '<button class="btn orange" onclick="location.reload()">🔄 ทำใหม่</button>';
+  html += '<a class="btn gray" href="leaderboard.html?sid='+SID+'">🏆 ดูอันดับ</a></div>';
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>

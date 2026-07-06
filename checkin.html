@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เช็คอิน</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>📍 เช็คอินภารกิจ</h1><p id="ciCount">-</p></div>
+<div class="container">
+  <div class="card">
+    <h2>🔑 กรอกรหัสภารกิจ</h2>
+    <p style="font-size:0.8rem;color:#666;margin-bottom:8px;">สแกน QR Code จากครู แล้วกรอกรหัสที่ได้</p>
+    <input id="missionCode" placeholder="เช่น SMART-S หรือ LESSON-01" style="text-transform:uppercase;">
+    <button class="btn green" onclick="doCheckin()">✅ เช็คอิน</button>
+    <div id="ciMsg" style="margin-top:10px;text-align:center;font-size:0.9rem;"></div>
+  </div>
+  <div class="card"><h2>ภารกิจ SMART Model</h2><div id="smartList"></div></div>
+  <div class="card"><h2>ภารกิจบทเรียน</h2><div id="lsList"></div></div>
+</div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+var SID = '';
+window.addEventListener('DOMContentLoaded', function() {
+  SID = getSid();
+  if (!SID) { document.querySelector('.container').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
+  buildNav('checkin', SID);
+  loadCheckins();
+});
+function loadCheckins() { callAPI('getCheckins', { student: SID }, render); }
+function render(missions) {
+  if (missions.error) return;
+  var smart = document.getElementById('smartList');
+  var lesson = document.getElementById('lsList');
+  smart.innerHTML=''; lesson.innerHTML='';
+  var done = 0;
+  for (var i=0;i<missions.length;i++) {
+    var m = missions[i];
+    if (m.checked) done++;
+    var html = '<div class="checkin-item '+(m.checked?'done':'')+'"><div class="ci-icon">'+(m.mission_type==='smart'?'🎯':'📖')+'</div><div class="ci-name">'+m.mission_name+'</div><div class="ci-status">'+(m.checked?'✅':'⬜')+'</div></div>';
+    if (m.mission_type === 'smart') smart.innerHTML += html; else lesson.innerHTML += html;
+  }
+  document.getElementById('ciCount').textContent = 'เช็คอินแล้ว ' + done + ' จาก ' + missions.length + ' ภารกิจ';
+}
+function doCheckin() {
+  var code = document.getElementById('missionCode').value.trim().toUpperCase();
+  if (!code) { alert('กรุณากรอกรหัสภารกิจ'); return; }
+  var msg = document.getElementById('ciMsg');
+  msg.textContent = '⏳ กำลังเช็คอิน...';
+  callAPI('checkin', { student: SID, missionCode: code }, function(r) {
+    if (r.error) { msg.innerHTML='<span style="color:#e74c3c;">❌ '+r.error+'</span>'; }
+    else { msg.innerHTML='<span style="color:#27ae60;">🎉 เช็คอิน "'+r.mission+'" สำเร็จ! +'+r.points+' คะแนน</span>'; document.getElementById('missionCode').value=''; loadCheckins(); }
+  });
+}
+</script>
+</body>
+</html>

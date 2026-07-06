@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Badge</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>🎖️ Badge ของฉัน</h1><p id="badgeCount">-</p></div>
+<div class="container">
+  <div class="card"><h2>💡 กลุ่มคิดสร้างสรรค์</h2><div class="badge-grid" id="g1"></div></div>
+  <div class="card"><h2>📢 กลุ่มสื่อสาร</h2><div class="badge-grid" id="g2"></div></div>
+  <div class="card"><h2>🤝 กลุ่มทีมเวิร์ค</h2><div class="badge-grid" id="g3"></div></div>
+  <div class="card"><h2>💻 กลุ่มดิจิทัล</h2><div class="badge-grid" id="g4"></div></div>
+</div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+var groupMap = { 'คิดสร้างสรรค์':'g1', 'สื่อสาร':'g2', 'ทีมเวิร์ค':'g3', 'ดิจิทัล':'g4' };
+window.addEventListener('DOMContentLoaded', function() {
+  var SID = getSid();
+  if (!SID) { document.querySelector('.container').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
+  buildNav('badges', SID);
+  callAPI('getBadges', { student: SID }, render);
+});
+function render(badges) {
+  if (badges.error) return;
+  var earned = 0;
+  for (var i=0;i<badges.length;i++) {
+    var b = badges[i];
+    if (b.earned) earned++;
+    var gid = groupMap[b.competency_group] || 'g1';
+    var box = document.getElementById(gid);
+    if (box) box.innerHTML += '<div class="badge-item '+(b.earned?'earned':'locked')+'"><div class="icon">'+(b.icon_emoji||'🎖️')+'</div><div class="name">'+b.badge_name+'</div></div>';
+  }
+  document.getElementById('badgeCount').textContent = 'ได้แล้ว ' + earned + ' จาก ' + badges.length + ' Badge';
+}
+</script>
+</body>
+</html>

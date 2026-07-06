@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART Nano Learning</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="header"><h1>🎓 SMART Nano Learning</h1><p>วิชาการประกันภัย | วิทยาลัยอาชีวศึกษาสุรินทร์</p></div>
+<div class="container">
+  <div class="card" id="loginCard">
+    <h2>เข้าสู่ระบบ</h2>
+    <p style="font-size:0.85rem;color:#666;margin-bottom:10px;">เลือกชื่อของคุณเพื่อเริ่มเรียนรู้</p>
+    <select id="studentSelect"><option value="">-- กำลังโหลดรายชื่อ --</option></select>
+    <button class="btn" onclick="login()">เข้าสู่ระบบ</button>
+    <div id="loadMsg" style="text-align:center;font-size:0.8rem;color:#999;margin-top:8px;"></div>
+  </div>
+  <div class="card" id="profileCard" style="display:none;">
+    <h2 id="pName">-</h2>
+    <div class="stat-row">
+      <div class="stat-box" style="background:#e3f2fd;"><div class="num" style="color:#2989d8;" id="pPoints">0</div><div class="label">คะแนน</div></div>
+      <div class="stat-box" style="background:#fff8e1;"><div class="num" style="color:#f39c12;" id="pBadges">0</div><div class="label">Badge</div></div>
+      <div class="stat-box" style="background:#e8f5e9;"><div class="num" style="color:#27ae60;" id="pQuiz">0</div><div class="label">Quiz ผ่าน</div></div>
+    </div>
+    <a class="btn" id="btnLessons">📚 เข้าสู่บทเรียน</a>
+    <a class="btn green" id="btnChatbot">🤖 ถามครูประกันภัย (AI)</a>
+    <a class="btn orange" id="btnCheckin">📍 เช็คอินภารกิจ</a>
+    <a class="btn gray" id="btnLeaderboard">🏆 ดูอันดับ</a>
+    <button class="btn red" onclick="logout()">ออกจากระบบ</button>
+  </div>
+</div>
+<script src="config.js?v=6"></script>
+<script src="app.js?v=6"></script>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  var sid = getSid();
+  if (sid) { showProfile(sid); } else { loadStudents(); }
+});
+function loadStudents() {
+  document.getElementById('loadMsg').textContent = 'กำลังเชื่อมต่อระบบ...';
+  callAPI('getStudents', null, function(students) {
+    var sel = document.getElementById('studentSelect');
+    var msg = document.getElementById('loadMsg');
+    if (students.error) { sel.innerHTML='<option value="">โหลดไม่สำเร็จ</option>'; msg.textContent='❌ '+students.error; return; }
+    sel.innerHTML = '<option value="">-- เลือกชื่อของคุณ --</option>';
+    for (var i=0;i<students.length;i++) { var s=students[i]; sel.innerHTML+='<option value="'+s.student_id+'">'+s.full_name+' ('+s.student_id+')</option>'; }
+    msg.textContent = '✅ พร้อมใช้งาน (' + students.length + ' คน)';
+  });
+}
+function login() {
+  var sid = document.getElementById('studentSelect').value;
+  if (!sid) { alert('กรุณาเลือกชื่อของคุณ'); return; }
+  try { localStorage.setItem('smart_sid', sid); } catch(e) {}
+  showProfile(sid);
+}
+function showProfile(sid) {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('profileCard').style.display = 'block';
+  document.getElementById('btnLessons').href = 'lessons.html?sid=' + sid;
+  document.getElementById('btnChatbot').href = 'chatbot.html?sid=' + sid;
+  document.getElementById('btnCheckin').href = 'checkin.html?sid=' + sid;
+  document.getElementById('btnLeaderboard').href = 'leaderboard.html?sid=' + sid;
+  callAPI('getStudent', { student: sid }, function(s) {
+    if (s.error) { logout(); return; }
+    document.getElementById('pName').textContent = '👋 สวัสดี ' + s.full_name;
+    document.getElementById('pPoints').textContent = s.total_points;
+    document.getElementById('pBadges').textContent = s.total_badges;
+    document.getElementById('pQuiz').textContent = s.total_quiz_passed;
+  });
+}
+</script>
+</body>
+</html>
