@@ -4,33 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>เช็คอิน</title>
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <div class="header"><h1>📍 เช็คอินภารกิจ</h1><p id="ciCount">-</p></div>
 <div class="container">
-  <div class="card">
-    <h2>🔑 กรอกรหัสภารกิจ</h2>
-    <p style="font-size:0.8rem;color:#666;margin-bottom:8px;">สแกน QR Code จากครู แล้วกรอกรหัสที่ได้</p>
-    <input id="missionCode" placeholder="เช่น SMART-S หรือ LESSON-01" style="text-transform:uppercase;">
-    <button class="btn green" onclick="doCheckin()">✅ เช็คอิน</button>
-    <div id="ciMsg" style="margin-top:10px;text-align:center;font-size:0.9rem;"></div>
+  <div class="card scan-card">
+    <div class="scan-icon">📷</div>
+    <h2>สแกน QR Code เพื่อเช็คอิน</h2>
+    <p class="muted">สแกน QR Code ที่ครูติดไว้ตามจุดภารกิจจริง ระบบจะเช็คอินให้อัตโนมัติ<br>ต้องอยู่หน้างานจริงถึงจะสแกนได้ 😊</p>
+    <div id="ciMsg" class="ci-msg"></div>
   </div>
   <div class="card"><h2>ภารกิจ SMART Model</h2><div id="smartList"></div></div>
   <div class="card"><h2>ภารกิจบทเรียน</h2><div id="lsList"></div></div>
 </div>
-<script src="config.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="app.js?v=8"></script>
 <script>
 var SID = '';
+// รหัสภารกิจที่มาจากการสแกน QR (เช่น checkin.html?mission=SMART-S)
+var MISSION = (new URLSearchParams(window.location.search).get('mission') || '').trim().toUpperCase();
+
 window.addEventListener('DOMContentLoaded', function() {
   SID = getSid();
   if (!SID) { document.querySelector('.container').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
   buildNav('checkin', SID);
-  loadCheckins();
+  if (MISSION) { doScanCheckin(MISSION); } else { loadCheckins(); }
 });
+
 function loadCheckins() { callAPI('getCheckins', { student: SID }, render); }
+
 function render(missions) {
   if (missions.error) return;
   var smart = document.getElementById('smartList');
@@ -45,14 +49,25 @@ function render(missions) {
   }
   document.getElementById('ciCount').textContent = 'เช็คอินแล้ว ' + done + ' จาก ' + missions.length + ' ภารกิจ';
 }
-function doCheckin() {
-  var code = document.getElementById('missionCode').value.trim().toUpperCase();
-  if (!code) { alert('กรุณากรอกรหัสภารกิจ'); return; }
+
+// เช็คอินอัตโนมัติจากการสแกน QR
+function doScanCheckin(code) {
   var msg = document.getElementById('ciMsg');
-  msg.textContent = '⏳ กำลังเช็คอิน...';
+  msg.className = 'ci-msg';
+  msg.textContent = '⏳ กำลังเช็คอินภารกิจ...';
   callAPI('checkin', { student: SID, missionCode: code }, function(r) {
-    if (r.error) { msg.innerHTML='<span style="color:#e74c3c;">❌ '+r.error+'</span>'; }
-    else { msg.innerHTML='<span style="color:#27ae60;">🎉 เช็คอิน "'+r.mission+'" สำเร็จ! +'+r.points+' คะแนน</span>'; document.getElementById('missionCode').value=''; loadCheckins(); }
+    if (r.error) {
+      msg.className = 'ci-msg err';
+      msg.innerHTML = '❌ ' + r.error;
+    } else {
+      msg.className = 'ci-msg ok';
+      msg.innerHTML = '🎉 เช็คอิน "'+r.mission+'" สำเร็จ! +'+r.points+' คะแนน';
+    }
+    // ล้าง mission ออกจาก URL กันเช็คอินซ้ำตอนรีเฟรช แล้วโหลดรายการใหม่
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, '', 'checkin.html?sid=' + encodeURIComponent(SID));
+    }
+    loadCheckins();
   });
 }
 </script>

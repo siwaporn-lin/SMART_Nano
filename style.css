@@ -54,3 +54,31 @@ select, input { width:100%; padding:12px; border-radius:10px; border:2px solid #
 .chat-input-row { display:flex; gap:8px; }
 .chat-input-row input { flex:1; }
 .chat-input-row button { width:auto; padding:12px 20px; margin:0; }
+.muted { font-size:0.85rem; color:#777; }
+
+/* ===== แดชบอร์ดโปรไฟล์ ===== */
+.profile-top { background:linear-gradient(135deg,#1e5799,#2989d8); color:#fff; padding:20px 16px 16px; border-radius:0 0 22px 22px; max-width:480px; margin:0 auto; }
+.profile-row { display:flex; align-items:center; gap:12px; }
+.avatar { width:60px; height:60px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:700; flex-shrink:0; overflow:hidden; }
+.avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-info { flex:1; min-width:0; }
+.pname { font-size:1.2rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.plevel { font-size:0.8rem; opacity:0.9; margin-top:2px; }
+.ppoints { text-align:right; }
+.ppoints .num { font-size:1.8rem; font-weight:700; line-height:1; }
+.ppoints .unit { font-size:0.7rem; opacity:0.9; }
+.level-wrap { margin-top:14px; }
+.level-label { display:flex; justify-content:space-between; font-size:0.75rem; opacity:0.95; margin-bottom:5px; }
+.level-bar { height:9px; background:rgba(255,255,255,0.28); border-radius:6px; overflow:hidden; }
+.level-fill { height:100%; background:#ffd54f; border-radius:6px; transition:width 0.6s ease; }
+.mini-stats { display:flex; gap:10px; margin-top:16px; }
+.mini { flex:1; text-align:center; background:rgba(255,255,255,0.18); border-radius:12px; padding:10px 4px; }
+.mini-num { font-size:1.15rem; font-weight:700; }
+.mini-label { font-size:0.7rem; opacity:0.9; margin-top:2px; }
+
+/* ===== หน้าสแกน QR ===== */
+.scan-card { text-align:center; }
+.scan-icon { font-size:2.6rem; margin-bottom:6px; }
+.ci-msg { margin-top:12px; font-size:0.92rem; font-weight:600; min-height:1px; }
+.ci-msg.ok { color:#27ae60; background:#e8f5e9; padding:10px; border-radius:10px; }
+.ci-msg.err { color:#e74c3c; background:#fdecea; padding:10px; border-radius:10px; }

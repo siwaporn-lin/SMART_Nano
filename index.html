@@ -4,40 +4,68 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMART Nano Learning</title>
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
-<div class="header"><h1>🎓 SMART Nano Learning</h1><p>วิชาการประกันภัย | วิทยาลัยอาชีวศึกษาสุรินทร์</p></div>
-<div class="container">
-  <div class="card" id="loginCard">
-    <h2>เข้าสู่ระบบ</h2>
-    <p style="font-size:0.85rem;color:#666;margin-bottom:10px;">เลือกชื่อของคุณเพื่อเริ่มเรียนรู้</p>
-    <select id="studentSelect"><option value="">-- กำลังโหลดรายชื่อ --</option></select>
-    <button class="btn" onclick="login()">เข้าสู่ระบบ</button>
-    <div id="loadMsg" style="text-align:center;font-size:0.8rem;color:#999;margin-top:8px;"></div>
-  </div>
-  <div class="card" id="profileCard" style="display:none;">
-    <h2 id="pName">-</h2>
-    <div class="stat-row">
-      <div class="stat-box" style="background:#e3f2fd;"><div class="num" style="color:#2989d8;" id="pPoints">0</div><div class="label">คะแนน</div></div>
-      <div class="stat-box" style="background:#fff8e1;"><div class="num" style="color:#f39c12;" id="pBadges">0</div><div class="label">Badge</div></div>
-      <div class="stat-box" style="background:#e8f5e9;"><div class="num" style="color:#27ae60;" id="pQuiz">0</div><div class="label">Quiz ผ่าน</div></div>
+
+<!-- ===== หน้าเข้าสู่ระบบ (ชั่วคราว — เฟส B จะเปลี่ยนเป็น Login ผ่าน LINE) ===== -->
+<div id="loginView" style="display:none;">
+  <div class="header"><h1>🎓 SMART Nano Learning</h1><p>วิชาการประกันภัย | วิทยาลัยอาชีวศึกษาสุรินทร์</p></div>
+  <div class="container">
+    <div class="card">
+      <h2>เข้าสู่ระบบ</h2>
+      <p class="muted" style="margin-bottom:10px;">เลือกชื่อของคุณเพื่อเริ่มเรียนรู้</p>
+      <select id="studentSelect"><option value="">-- กำลังโหลดรายชื่อ --</option></select>
+      <button class="btn" onclick="login()">เข้าสู่ระบบ</button>
+      <div id="loadMsg" class="muted" style="text-align:center;margin-top:8px;"></div>
     </div>
+  </div>
+</div>
+
+<!-- ===== แดชบอร์ดโปรไฟล์ ===== -->
+<div id="profileView" style="display:none;">
+  <div class="profile-top">
+    <div class="profile-row">
+      <div class="avatar" id="avatar">🙂</div>
+      <div class="profile-info">
+        <div class="pname" id="pName">-</div>
+        <div class="plevel" id="pLevel">ระดับ: -</div>
+      </div>
+      <div class="ppoints"><div class="num" id="pPoints">0</div><div class="unit">คะแนน</div></div>
+    </div>
+    <div class="level-wrap">
+      <div class="level-label"><span id="pLevelName">-</span><span id="pLevelProgress">0/0</span></div>
+      <div class="level-bar"><div class="level-fill" id="pLevelFill" style="width:0%;"></div></div>
+    </div>
+    <div class="mini-stats">
+      <div class="mini"><div class="mini-num" id="mCheckin">–</div><div class="mini-label">เช็คอิน</div></div>
+      <div class="mini"><div class="mini-num" id="mBadge">–</div><div class="mini-label">Badge</div></div>
+      <div class="mini"><div class="mini-num" id="mRank">–</div><div class="mini-label">อันดับ</div></div>
+    </div>
+  </div>
+  <div class="container" style="padding-top:12px;">
     <a class="btn" id="btnLessons">📚 เข้าสู่บทเรียน</a>
-    <a class="btn green" id="btnChatbot">🤖 ถามครูประกันภัย (AI)</a>
     <a class="btn orange" id="btnCheckin">📍 เช็คอินภารกิจ</a>
+    <a class="btn gray" id="btnBadges">🎖️ Badge ของฉัน</a>
     <a class="btn gray" id="btnLeaderboard">🏆 ดูอันดับ</a>
     <button class="btn red" onclick="logout()">ออกจากระบบ</button>
   </div>
 </div>
-<script src="config.js?v=7"></script>
-<script src="app.js?v=7"></script>
+
+<script src="config.js?v=8"></script>
+<script src="app.js?v=8"></script>
 <script>
 window.addEventListener('DOMContentLoaded', function() {
   var sid = getSid();
-  if (sid) { showProfile(sid); } else { loadStudents(); }
+  if (sid) { showProfile(sid); } else { showLogin(); }
 });
+
+function showLogin() {
+  document.getElementById('loginView').style.display = 'block';
+  document.getElementById('profileView').style.display = 'none';
+  loadStudents();
+}
 function loadStudents() {
   document.getElementById('loadMsg').textContent = 'กำลังเชื่อมต่อระบบ...';
   callAPI('getStudents', null, function(students) {
@@ -55,19 +83,67 @@ function login() {
   try { localStorage.setItem('smart_sid', sid); } catch(e) {}
   showProfile(sid);
 }
+
+// ===== ระดับตามคะแนนสะสม =====
+function levelInfo(points) {
+  var tiers = [
+    { min: 0,    name: 'มือใหม่' },
+    { min: 100,  name: 'ผู้เรียนรู้' },
+    { min: 300,  name: 'นักผจญภัย' },
+    { min: 600,  name: 'ผู้เชี่ยวชาญ' },
+    { min: 1000, name: 'ปรมาจารย์' }
+  ];
+  var i = 0;
+  for (var k = 0; k < tiers.length; k++) { if (points >= tiers[k].min) i = k; }
+  var cur = tiers[i], next = tiers[i + 1];
+  if (!next) return { name: cur.name, text: points + ' คะแนน', pct: 100 };
+  return { name: cur.name, text: points + '/' + next.min, pct: Math.round(points / next.min * 100) };
+}
+
 function showProfile(sid) {
-  document.getElementById('loginCard').style.display = 'none';
-  document.getElementById('profileCard').style.display = 'block';
-  document.getElementById('btnLessons').href = 'lessons.html?sid=' + sid;
-  document.getElementById('btnChatbot').href = 'chatbot.html?sid=' + sid;
-  document.getElementById('btnCheckin').href = 'checkin.html?sid=' + sid;
+  document.getElementById('loginView').style.display = 'none';
+  document.getElementById('profileView').style.display = 'block';
+  buildNav('home', sid);
+
+  document.getElementById('btnLessons').href     = 'lessons.html?sid=' + sid;
+  document.getElementById('btnCheckin').href     = 'checkin.html?sid=' + sid;
+  document.getElementById('btnBadges').href      = 'badges.html?sid=' + sid;
   document.getElementById('btnLeaderboard').href = 'leaderboard.html?sid=' + sid;
+
+  // ข้อมูลหลัก: ชื่อ + คะแนน + ระดับ
   callAPI('getStudent', { student: sid }, function(s) {
     if (s.error) { logout(); return; }
-    document.getElementById('pName').textContent = '👋 สวัสดี ' + s.full_name;
+    var name = s.full_name || 'นักเรียน';
+    document.getElementById('pName').textContent = name;
+    document.getElementById('avatar').textContent = (name.trim().charAt(0) || '🙂');
     document.getElementById('pPoints').textContent = s.total_points;
-    document.getElementById('pBadges').textContent = s.total_badges;
-    document.getElementById('pQuiz').textContent = s.total_quiz_passed;
+    var lv = levelInfo(Number(s.total_points) || 0);
+    document.getElementById('pLevel').textContent = 'ระดับ: ' + lv.name;
+    document.getElementById('pLevelName').textContent = lv.name;
+    document.getElementById('pLevelProgress').textContent = lv.text;
+    document.getElementById('pLevelFill').style.width = lv.pct + '%';
+  });
+
+  // Badge ได้แล้ว/ทั้งหมด
+  callAPI('getBadges', { student: sid }, function(b) {
+    if (b.error || !b.length) return;
+    var earned = 0;
+    for (var i=0;i<b.length;i++) if (b[i].earned) earned++;
+    document.getElementById('mBadge').textContent = earned + '/' + b.length;
+  });
+
+  // เช็คอินแล้ว/ทั้งหมด
+  callAPI('getCheckins', { student: sid }, function(c) {
+    if (c.error || !c.length) return;
+    var done = 0;
+    for (var i=0;i<c.length;i++) if (c[i].checked) done++;
+    document.getElementById('mCheckin').textContent = done + '/' + c.length;
+  });
+
+  // อันดับ
+  callAPI('getLeaderboard', null, function(lb) {
+    if (lb.error || !lb.length) return;
+    for (var i=0;i<lb.length;i++) { if (lb[i].student_id === sid) { document.getElementById('mRank').textContent = '#' + lb[i].rank; return; } }
   });
 }
 </script>

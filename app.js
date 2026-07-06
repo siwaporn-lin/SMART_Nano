@@ -33,10 +33,9 @@ function buildNav(active, sid) {
   var items = [
     ['home','🏠','หน้าแรก','index.html'],
     ['lessons','📚','บทเรียน','lessons.html'],
-    ['chatbot','🤖','AI','chatbot.html'],
+    ['checkin','📍','เช็คอิน','checkin.html'],
     ['badges','🎖️','Badge','badges.html'],
-    ['leaderboard','🏆','อันดับ','leaderboard.html'],
-    ['checkin','📍','เช็คอิน','checkin.html']
+    ['leaderboard','🏆','อันดับ','leaderboard.html']
   ];
   var html = '';
   for (var i=0;i<items.length;i++) {

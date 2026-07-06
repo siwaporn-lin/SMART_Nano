@@ -6,6 +6,7 @@ desktop.ini
 # โปรแกรมแก้ไขโค้ด
 .vscode/
 .idea/
+.claude/
 
 # ไฟล์ชั่วคราว
 *.log
