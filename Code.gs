@@ -38,6 +38,7 @@ function processRequest(e) {
       case 'chatbot':        return apiChatbot(sid, p.message);
       case 'getStudentByLine': return apiGetStudentByLine(p.line);
       case 'linkLine':         return apiLinkLine(p.line, sid, p.name);
+      case 'lineLogin':        return apiLineLogin(p.line, p.name);
       case 'ping':           return { ok: true, time: new Date() };
       default:               return { error: 'ไม่รู้จัก action: ' + action };
     }
@@ -258,6 +259,27 @@ function apiGetStudentByLine(lineUid) {
   if (s.error) return { linked: false };
   s.linked = true;
   return s;
+}
+
+// สมัคร/เข้าระบบด้วย LINE อัตโนมัติ — ใช้ LINE userId เป็นรหัสนักเรียนเลย
+// ครั้งแรก: สร้างนักเรียนใหม่จากชื่อ LINE / ครั้งต่อไป: คืนข้อมูลเดิม
+function apiLineLogin(lineUid, name) {
+  if (!lineUid) return { error: 'ไม่พบ LINE ID' };
+  let s = apiGetStudent(lineUid);
+  if (!s.error) return s;                       // เคยสมัครแล้ว -> เข้าเลย
+  const sheet = SS.getSheetByName('Students');
+  const headers = sheet.getDataRange().getValues()[0];
+  const row = headers.map(h => {
+    if (h === 'student_id') return lineUid;
+    if (h === 'full_name')  return name || 'ผู้ใช้ LINE';
+    if (h === 'nickname')   return name || '';
+    if (h === 'status')     return 'active';
+    if (h === 'total_points' || h === 'total_badges' || h === 'total_quiz_passed') return 0;
+    if (h === 'created_at' || h === 'joined_at') return new Date();
+    return '';
+  });
+  sheet.appendRow(row);
+  return apiGetStudent(lineUid);
 }
 
 // ผูก LINE คนนี้เข้ากับรหัสนักเรียน (ทำครั้งเดียวตอนเข้าครั้งแรก)

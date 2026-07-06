@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMART Nano Learning</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
@@ -55,8 +55,8 @@
   </div>
 </div>
 
-<script src="config.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="config.js?v=10"></script>
+<script src="app.js?v=10"></script>
 <script>
 var lineProfile = null;   // เก็บโปรไฟล์ LINE (userId, displayName, pictureUrl)
 
@@ -86,14 +86,14 @@ function fallbackNoLine() {
   if (sid) { showProfile(sid); } else { showLogin(); }
 }
 
-// รู้จัก LINE userId แล้ว -> เช็คว่าผูกกับนักเรียนคนไหน
+// รู้จัก LINE userId แล้ว -> สมัคร/เข้าระบบอัตโนมัติด้วยชื่อ LINE
 function resolveLineUser(p) {
-  callAPI('getStudentByLine', { line: p.userId }, function(r) {
-    if (r && r.linked && r.student_id) {
+  callAPI('lineLogin', { line: p.userId, name: p.displayName || '' }, function(r) {
+    if (r && r.student_id) {
       try { localStorage.setItem('smart_sid', r.student_id); } catch(e) {}
       showProfile(r.student_id, p);
     } else {
-      // ยังไม่ผูก -> ให้เลือกชื่อตัวเองครั้งเดียว
+      // เผื่อระบบมีปัญหา -> ให้เลือกชื่อแบบสำรอง
       showLinking(p);
     }
   });
@@ -180,13 +180,13 @@ function showProfile(sid, profile) {
   document.getElementById('btnBadges').href      = 'badges.html?sid=' + sid;
   document.getElementById('btnLeaderboard').href = 'leaderboard.html?sid=' + sid;
 
-  if (profile && profile.pictureUrl) {
-    document.getElementById('avatar').innerHTML = '<img src="' + profile.pictureUrl + '" alt="">';
-  }
+  // โชว์ชื่อ + รูปจาก LINE ทันที (ถ้ามี)
+  if (profile && profile.pictureUrl) document.getElementById('avatar').innerHTML = '<img src="' + profile.pictureUrl + '" alt="">';
+  if (profile && profile.displayName) document.getElementById('pName').textContent = profile.displayName;
 
   callAPI('getStudent', { student: sid }, function(s) {
     if (s.error) { logout(); return; }
-    var name = s.full_name || 'นักเรียน';
+    var name = (profile && profile.displayName) ? profile.displayName : (s.full_name || 'นักเรียน');
     document.getElementById('pName').textContent = name;
     if (!(profile && profile.pictureUrl)) document.getElementById('avatar').textContent = (name.trim().charAt(0) || '🙂');
     document.getElementById('pPoints').textContent = s.total_points;
