@@ -5,4 +5,4 @@
 // ให้แก้แค่บรรทัด API_URL ด้านล่างนี้ที่เดียว ทุกหน้าจะใช้ตามอัตโนมัติ
 // ============================================================
 
-var API_URL = 'https://script.google.com/macros/s/AKfycbwoMAnqQxQKTp6v0u1lM62QhL_XM19TCAPn3dgUz0RBUtuzXQNTiHbQSg_9SOr6vHSD/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbzoAmAneoB3kxqoLcJ6DbAk-x--RqPrR3RuSy4dVufjKq_2bboajjXl0MNirfpKEUaz/exec';
