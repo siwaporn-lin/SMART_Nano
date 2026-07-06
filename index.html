@@ -5,19 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMART Nano Learning</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
-<!-- ===== หน้าเข้าสู่ระบบ (ชั่วคราว — เฟส B จะเปลี่ยนเป็น Login ผ่าน LINE) ===== -->
+<!-- ===== หน้าเข้าสู่ระบบ / ผูกบัญชี LINE ครั้งแรก ===== -->
 <div id="loginView" style="display:none;">
   <div class="header"><h1>🎓 SMART Nano Learning</h1><p>วิชาการประกันภัย | วิทยาลัยอาชีวศึกษาสุรินทร์</p></div>
   <div class="container">
     <div class="card">
-      <h2>เข้าสู่ระบบ</h2>
-      <p class="muted" style="margin-bottom:10px;">เลือกชื่อของคุณเพื่อเริ่มเรียนรู้</p>
+      <h2 id="loginTitle">เข้าสู่ระบบ</h2>
+      <p class="muted" id="loginHint" style="margin-bottom:10px;">เลือกชื่อของคุณเพื่อเริ่มเรียนรู้</p>
       <select id="studentSelect"><option value="">-- กำลังโหลดรายชื่อ --</option></select>
-      <button class="btn" onclick="login()">เข้าสู่ระบบ</button>
+      <button class="btn" id="loginBtn" onclick="login()">เข้าสู่ระบบ</button>
+      <button class="btn green" id="lineLoginBtn" onclick="lineLogin()" style="display:none;">🟢 เข้าสู่ระบบด้วย LINE</button>
       <div id="loadMsg" class="muted" style="text-align:center;margin-top:8px;"></div>
     </div>
   </div>
@@ -53,19 +55,71 @@
   </div>
 </div>
 
-<script src="config.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="config.js?v=9"></script>
+<script src="app.js?v=9"></script>
 <script>
-window.addEventListener('DOMContentLoaded', function() {
+var lineProfile = null;   // เก็บโปรไฟล์ LINE (userId, displayName, pictureUrl)
+
+window.addEventListener('DOMContentLoaded', initAuth);
+
+// ===== ระบบยืนยันตัวตน: ใช้ LINE ก่อน ถ้าไม่มีค่อยใช้แบบเลือกชื่อ (ทดสอบ) =====
+function initAuth() {
+  var hasLiff = (typeof liff !== 'undefined') && (typeof LIFF_ID !== 'undefined') && LIFF_ID;
+  if (!hasLiff) { fallbackNoLine(); return; }
+  liff.init({ liffId: LIFF_ID }).then(function() {
+    if (liff.isLoggedIn()) {
+      liff.getProfile().then(function(p) {
+        lineProfile = p;
+        resolveLineUser(p);
+      }).catch(fallbackNoLine);
+    } else {
+      // อยู่นอก LINE และยังไม่ได้ล็อกอิน
+      var sid = getSid();
+      if (sid) { showProfile(sid); } else { showLineLogin(); }
+    }
+  }).catch(function() { fallbackNoLine(); });
+}
+
+// เปิดนอก LINE หรือ LIFF ใช้ไม่ได้ -> ใช้ระบบเลือกชื่อเดิม (สำหรับทดสอบ)
+function fallbackNoLine() {
   var sid = getSid();
   if (sid) { showProfile(sid); } else { showLogin(); }
-});
+}
 
-function showLogin() {
+// รู้จัก LINE userId แล้ว -> เช็คว่าผูกกับนักเรียนคนไหน
+function resolveLineUser(p) {
+  callAPI('getStudentByLine', { line: p.userId }, function(r) {
+    if (r && r.linked && r.student_id) {
+      try { localStorage.setItem('smart_sid', r.student_id); } catch(e) {}
+      showProfile(r.student_id, p);
+    } else {
+      // ยังไม่ผูก -> ให้เลือกชื่อตัวเองครั้งเดียว
+      showLinking(p);
+    }
+  });
+}
+
+// --- หน้าจอต่าง ๆ ---
+function showLogin() {           // โหมดทดสอบ (ไม่มี LINE)
+  showLoginCard('เข้าสู่ระบบ', 'เลือกชื่อของคุณเพื่อเริ่มเรียนรู้', 'เข้าสู่ระบบ', false);
+}
+function showLineLogin() {       // อยู่นอก LINE -> เชิญให้ล็อกอิน LINE (+ ทางเลือกทดสอบ)
+  showLoginCard('เข้าสู่ระบบ', 'เข้าสู่ระบบด้วย LINE เพื่อใช้งาน (หรือเลือกชื่อเพื่อทดสอบ)', 'เข้าสู่ระบบ (ทดสอบ)', true);
+}
+function showLinking(p) {        // ครั้งแรกใน LINE -> ผูกบัญชี
+  var hi = p && p.displayName ? ('สวัสดี ' + p.displayName + ' 👋 ') : '';
+  showLoginCard('ยืนยันตัวตนครั้งแรก', hi + 'เลือกชื่อของคุณในระบบ 1 ครั้ง แล้วครั้งต่อไปเข้าได้เลย', 'ยืนยันและเข้าใช้งาน', false);
+}
+function showLoginCard(title, hint, btnText, showLineBtn) {
   document.getElementById('loginView').style.display = 'block';
   document.getElementById('profileView').style.display = 'none';
+  document.getElementById('loginTitle').textContent = title;
+  document.getElementById('loginHint').textContent = hint;
+  document.getElementById('loginBtn').textContent = btnText;
+  document.getElementById('lineLoginBtn').style.display = showLineBtn ? 'block' : 'none';
   loadStudents();
 }
+
 function loadStudents() {
   document.getElementById('loadMsg').textContent = 'กำลังเชื่อมต่อระบบ...';
   callAPI('getStudents', null, function(students) {
@@ -77,11 +131,27 @@ function loadStudents() {
     msg.textContent = '✅ พร้อมใช้งาน (' + students.length + ' คน)';
   });
 }
+
+function lineLogin() {
+  if (typeof liff !== 'undefined' && liff.login) { liff.login(); }
+}
+
+// กดปุ่มเข้าสู่ระบบ / ยืนยันตัวตน
 function login() {
   var sid = document.getElementById('studentSelect').value;
   if (!sid) { alert('กรุณาเลือกชื่อของคุณ'); return; }
-  try { localStorage.setItem('smart_sid', sid); } catch(e) {}
-  showProfile(sid);
+  if (lineProfile) {
+    // ผูก LINE เข้ากับนักเรียน
+    callAPI('linkLine', { line: lineProfile.userId, student: sid, name: lineProfile.displayName || '' }, function(r) {
+      if (r.error) { alert('❌ ' + r.error); return; }
+      var id = r.student_id || sid;
+      try { localStorage.setItem('smart_sid', id); } catch(e) {}
+      showProfile(id, lineProfile);
+    });
+  } else {
+    try { localStorage.setItem('smart_sid', sid); } catch(e) {}
+    showProfile(sid);
+  }
 }
 
 // ===== ระดับตามคะแนนสะสม =====
@@ -100,7 +170,7 @@ function levelInfo(points) {
   return { name: cur.name, text: points + '/' + next.min, pct: Math.round(points / next.min * 100) };
 }
 
-function showProfile(sid) {
+function showProfile(sid, profile) {
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('profileView').style.display = 'block';
   buildNav('home', sid);
@@ -110,12 +180,15 @@ function showProfile(sid) {
   document.getElementById('btnBadges').href      = 'badges.html?sid=' + sid;
   document.getElementById('btnLeaderboard').href = 'leaderboard.html?sid=' + sid;
 
-  // ข้อมูลหลัก: ชื่อ + คะแนน + ระดับ
+  if (profile && profile.pictureUrl) {
+    document.getElementById('avatar').innerHTML = '<img src="' + profile.pictureUrl + '" alt="">';
+  }
+
   callAPI('getStudent', { student: sid }, function(s) {
     if (s.error) { logout(); return; }
     var name = s.full_name || 'นักเรียน';
     document.getElementById('pName').textContent = name;
-    document.getElementById('avatar').textContent = (name.trim().charAt(0) || '🙂');
+    if (!(profile && profile.pictureUrl)) document.getElementById('avatar').textContent = (name.trim().charAt(0) || '🙂');
     document.getElementById('pPoints').textContent = s.total_points;
     var lv = levelInfo(Number(s.total_points) || 0);
     document.getElementById('pLevel').textContent = 'ระดับ: ' + lv.name;
@@ -124,7 +197,6 @@ function showProfile(sid) {
     document.getElementById('pLevelFill').style.width = lv.pct + '%';
   });
 
-  // Badge ได้แล้ว/ทั้งหมด
   callAPI('getBadges', { student: sid }, function(b) {
     if (b.error || !b.length) return;
     var earned = 0;
@@ -132,7 +204,6 @@ function showProfile(sid) {
     document.getElementById('mBadge').textContent = earned + '/' + b.length;
   });
 
-  // เช็คอินแล้ว/ทั้งหมด
   callAPI('getCheckins', { student: sid }, function(c) {
     if (c.error || !c.length) return;
     var done = 0;
@@ -140,7 +211,6 @@ function showProfile(sid) {
     document.getElementById('mCheckin').textContent = done + '/' + c.length;
   });
 
-  // อันดับ
   callAPI('getLeaderboard', null, function(lb) {
     if (lb.error || !lb.length) return;
     for (var i=0;i<lb.length;i++) { if (lb[i].student_id === sid) { document.getElementById('mRank').textContent = '#' + lb[i].rank; return; } }

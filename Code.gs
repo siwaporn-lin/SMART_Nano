@@ -36,6 +36,8 @@ function processRequest(e) {
       case 'checkin':        return apiCheckin(sid, p.missionCode);
       case 'getCheckins':    return apiGetStudentCheckins(sid);
       case 'chatbot':        return apiChatbot(sid, p.message);
+      case 'getStudentByLine': return apiGetStudentByLine(p.line);
+      case 'linkLine':         return apiLinkLine(p.line, sid, p.name);
       case 'ping':           return { ok: true, time: new Date() };
       default:               return { error: 'ไม่รู้จัก action: ' + action };
     }
@@ -230,4 +232,47 @@ function updateDashboard() {
 function testAPI() {
   Logger.log('นักเรียน: ' + apiGetAllStudents().length);
   Logger.log('บทเรียน: ' + apiGetLessons().length);
+}
+
+// ============================================================
+// เชื่อม LINE Login (เฟส B) — จับคู่ LINE userId ↔ รหัสนักเรียน
+// ตารางเก็บชื่อ 'LineUsers' (สร้างให้อัตโนมัติถ้ายังไม่มี)
+// ============================================================
+function lineSheet() {
+  let sh = SS.getSheetByName('LineUsers');
+  if (!sh) {
+    sh = SS.insertSheet('LineUsers');
+    sh.appendRow(['line_user_id', 'student_id', 'display_name', 'linked_at']);
+  }
+  return sh;
+}
+
+// เช็คว่า LINE คนนี้ผูกกับนักเรียนคนไหนแล้วหรือยัง
+function apiGetStudentByLine(lineUid) {
+  if (!lineUid) return { linked: false };
+  const sh = SS.getSheetByName('LineUsers');
+  if (!sh) return { linked: false };
+  const rows = sheetToObjects('LineUsers').filter(r => r.line_user_id === lineUid);
+  if (!rows.length) return { linked: false };
+  const s = apiGetStudent(rows[0].student_id);
+  if (s.error) return { linked: false };
+  s.linked = true;
+  return s;
+}
+
+// ผูก LINE คนนี้เข้ากับรหัสนักเรียน (ทำครั้งเดียวตอนเข้าครั้งแรก)
+function apiLinkLine(lineUid, sid, name) {
+  if (!lineUid) return { error: 'ไม่พบ LINE ID' };
+  if (!sid)     return { error: 'กรุณาเลือกชื่อนักเรียน' };
+  const sheet = lineSheet();
+  const existing = sheetToObjects('LineUsers').filter(r => r.line_user_id === lineUid);
+  if (existing.length) {
+    const s0 = apiGetStudent(existing[0].student_id);
+    if (!s0.error) { s0.linked = true; s0.already = true; return s0; }
+  }
+  const s = apiGetStudent(sid);
+  if (s.error) return { error: 'ไม่พบนักเรียนรหัสนี้' };
+  sheet.appendRow([lineUid, sid, name || '', new Date()]);
+  s.linked = true;
+  return s;
 }

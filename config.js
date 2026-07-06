@@ -6,3 +6,6 @@
 // ============================================================
 
 var API_URL = 'https://script.google.com/macros/s/AKfycbzoAmAneoB3kxqoLcJ6DbAk-x--RqPrR3RuSy4dVufjKq_2bboajjXl0MNirfpKEUaz/exec';
+
+// LIFF ID สำหรับ Login ผ่าน LINE (เฟส B)
+var LIFF_ID = '2010622053-MKfkyMkh';
