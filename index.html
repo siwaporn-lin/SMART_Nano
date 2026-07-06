@@ -12,6 +12,7 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
+<div id="dbg" style="position:fixed;top:0;left:0;right:0;max-height:45%;overflow:auto;background:#111;color:#0f0;font-size:12px;line-height:1.5;padding:6px 8px;z-index:99999;white-space:pre-wrap;font-family:monospace;"></div>
 
 <!-- ===== หน้าเข้าสู่ระบบ / ผูกบัญชี LINE ครั้งแรก ===== -->
 <div id="loginView" style="display:none;">
@@ -62,24 +63,28 @@
 <script src="app.js?v=10"></script>
 <script>
 var lineProfile = null;   // เก็บโปรไฟล์ LINE (userId, displayName, pictureUrl)
+function dbg(m){ try{ var d=document.getElementById('dbg'); if(d) d.textContent += m + '\n'; }catch(e){} }
 
 window.addEventListener('DOMContentLoaded', initAuth);
 
 // ===== ระบบยืนยันตัวตน: ใช้ LINE ก่อน ถ้าไม่มีค่อยใช้แบบเลือกชื่อ (ทดสอบ) =====
 function initAuth() {
   var hasLiff = (typeof liff !== 'undefined') && (typeof LIFF_ID !== 'undefined') && LIFF_ID;
-  if (!hasLiff) { fallbackNoLine(); return; }
+  dbg('1. hasLiff=' + hasLiff + ' LIFF_ID=' + (typeof LIFF_ID !== 'undefined' ? LIFF_ID : 'undef'));
+  if (!hasLiff) { dbg('   -> ไม่มี liff, fallback'); fallbackNoLine(); return; }
   liff.init({ liffId: LIFF_ID }).then(function() {
+    dbg('2. init OK | isLoggedIn=' + liff.isLoggedIn() + ' | inClient=' + (liff.isInClient?liff.isInClient():'?'));
     if (liff.isLoggedIn()) {
       liff.getProfile().then(function(p) {
+        dbg('3. getProfile OK: ' + p.displayName);
         lineProfile = p;
         resolveLineUser(p);
-      }).catch(fallbackNoLine);
+      }).catch(function(e){ dbg('3. getProfile FAIL: ' + e); fallbackNoLine(); });
     } else {
-      // ยังไม่ล็อกอิน LINE -> พาไปล็อกอินทันที (ได้ทั้งในแอป LINE และเบราว์เซอร์)
+      dbg('2b. ยังไม่ล็อกอิน -> liff.login()');
       liff.login();
     }
-  }).catch(function() { fallbackNoLine(); });
+  }).catch(function(e) { dbg('2. init FAIL: ' + e); fallbackNoLine(); });
 }
 
 // เปิดนอก LINE หรือ LIFF ใช้ไม่ได้ -> ใช้ระบบเลือกชื่อเดิม (สำหรับทดสอบ)
@@ -92,12 +97,15 @@ function fallbackNoLine() {
 function resolveLineUser(p) {
   var nameB64 = '';
   try { nameB64 = btoa(unescape(encodeURIComponent(p.displayName || ''))); } catch(e) { nameB64 = ''; }
+  dbg('4. calling lineLogin...');
   callAPI('lineLogin', { line: p.userId, name: nameB64 }, function(r) {
+    dbg('5. lineLogin resp: ' + JSON.stringify(r).substr(0,150));
     if (r && r.student_id) {
+      dbg('6. OK -> showProfile');
       try { localStorage.setItem('smart_sid', r.student_id); } catch(e) {}
       showProfile(r.student_id, p);
     } else {
-      // เผื่อระบบมีปัญหา -> ให้เลือกชื่อแบบสำรอง
+      dbg('6. ไม่มี student_id -> showLinking (dropdown)');
       showLinking(p);
     }
   });
