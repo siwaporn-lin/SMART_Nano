@@ -174,6 +174,12 @@ function levelInfo(points) {
 }
 
 function showProfile(sid, profile) {
+  // มาจากการสแกน QR เช็คอิน (goto=checkin) -> เด้งไปหน้าเช็คอินพร้อมรหัสภารกิจ
+  var qp = new URLSearchParams(window.location.search);
+  if (qp.get('goto') === 'checkin') {
+    window.location.href = 'checkin.html?sid=' + encodeURIComponent(sid) + '&mission=' + encodeURIComponent(qp.get('mission') || '');
+    return;
+  }
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('profileView').style.display = 'block';
   buildNav('home', sid);
