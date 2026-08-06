@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ถาม AI ครูประกันภัย · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=21">
+<style>
+  body{padding-bottom:150px;}
+  .chat-wrap{max-width:640px;margin:0 auto;padding:14px 12px 0;}
+  .bubble{max-width:82%;padding:11px 14px;border-radius:18px;margin:8px 0;font-size:.92rem;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;}
+  .bubble.ai{background:#fff;border:1px solid var(--line);border-bottom-left-radius:6px;box-shadow:var(--shadow);}
+  .bubble.me{background:var(--grad);color:#fff;margin-left:auto;border-bottom-right-radius:6px;}
+  .row{display:flex;align-items:flex-end;gap:8px;}
+  .row.me{justify-content:flex-end;}
+  .bot-ic{width:34px;height:34px;border-radius:50%;background:#f5f3ff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:0 0 auto;}
+  .typing{color:var(--muted);font-size:.85rem;padding:4px 8px;}
+  .composer{position:fixed;left:0;right:0;bottom:64px;background:#fff;border-top:1px solid var(--line);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;max-width:660px;margin:0 auto;box-shadow:0 -4px 18px rgba(99,102,241,.08);}
+  .composer input{flex:1;padding:12px 14px;border:1.5px solid #e5e7ff;border-radius:99px;font-family:inherit;font-size:.95rem;outline:none;}
+  .composer input:focus{border-color:var(--purple);}
+  .composer button{width:48px;height:48px;border:none;border-radius:50%;background:var(--pink);color:#fff;font-size:1.2rem;cursor:pointer;flex:0 0 auto;box-shadow:0 4px 12px rgba(236,72,153,.3);}
+  .composer button:disabled{opacity:.5;}
+</style>
+</head>
+<body>
+<div class="header"><h1>🤖 ถาม AI ครูประกันภัย</h1><p>สงสัยเรื่องประกันภัย ถามได้เลย!</p></div>
+<div class="chat-wrap" id="chat"></div>
+
+<div class="composer">
+  <input id="msg" type="text" maxlength="500" placeholder="พิมพ์คำถามเรื่องประกันภัย..." autocomplete="off">
+  <button id="send" onclick="send()">➤</button>
+</div>
+
+<script src="config.js?v=21"></script>
+<script src="data.js?v=21"></script>
+<script src="app.js?v=21"></script>
+<script>
+var SID='';
+window.addEventListener('DOMContentLoaded', function(){
+  SID=requireSid(); if(!SID) return;
+  buildNav('');
+  addAI('สวัสดีค่ะ 😊 ครูประกันภัย AI พร้อมช่วยแล้ว ถามได้เลยว่าสงสัยเรื่องอะไร เช่น "ประกันภัยรถยนต์ภาคบังคับคุ้มครองอะไรบ้าง"');
+  var inp=document.getElementById('msg');
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') send(); });
+  inp.focus();
+});
+function scroll(){ window.scrollTo(0, document.body.scrollHeight); }
+function addMe(t){
+  var d=document.createElement('div'); d.className='row me fade-in';
+  d.innerHTML='<div class="bubble me">'+esc(t)+'</div>';
+  document.getElementById('chat').appendChild(d); scroll();
+}
+function addAI(t){
+  var d=document.createElement('div'); d.className='row fade-in';
+  d.innerHTML='<div class="bot-ic">🤖</div><div class="bubble ai">'+esc(t)+'</div>';
+  document.getElementById('chat').appendChild(d); scroll();
+}
+function addTyping(){
+  var d=document.createElement('div'); d.className='row'; d.id='typing';
+  d.innerHTML='<div class="bot-ic">🤖</div><div class="bubble ai typing">กำลังพิมพ์…</div>';
+  document.getElementById('chat').appendChild(d); scroll(); return d;
+}
+function send(){
+  var inp=document.getElementById('msg'), btn=document.getElementById('send');
+  var t=inp.value.trim(); if(!t) return;
+  addMe(t); inp.value=''; btn.disabled=true;
+  var typing=addTyping();
+  callAPI('chatbot', { student:SID, message:t }, function(r){
+    typing.remove(); btn.disabled=false; inp.focus();
+    if (r.error){ addAI('❌ '+r.error); return; }
+    addAI(r.reply || 'ขออภัยค่ะ ตอบไม่ได้');
+  });
+}
+</script>
+</body>
+</html>

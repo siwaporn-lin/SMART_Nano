@@ -48,6 +48,7 @@ function process(e){
       case 'transfer':      return unitStage(sid, p.unit, 'T');
       case 'checkin':       return checkin(sid, p.missionCode || p.topic);
       case 'getLeaderboard':return getLeaderboard();
+      case 'chatbot':       return chatbot(sid, p.message);
       default:              return { error:'ไม่รู้จัก action: '+a };
     }
   } catch(err){ return { error: String(err && err.message || err) }; }
@@ -231,4 +232,40 @@ function getLeaderboard(){
     .sort(function(a,b){ return b.total_points-a.total_points; });
   arr.forEach(function(s,i){ s.rank=i+1; });
   return arr;
+}
+
+// ===== แชท AI ครูประกันภัย (Gemini) =====
+function S_Config(){ return ensureSheet('Config',['key','value']); }
+function S_Chat(){ return ensureSheet('ChatLog',['student_id','message','reply','ts']); }
+function getConfig(key){
+  var d=S_Config().getDataRange().getValues();
+  for (var i=1;i<d.length;i++){ if (String(d[i][0])===key) return d[i][1]; }
+  return '';
+}
+function chatbot(sid, message){
+  message = (message||'').toString().trim();
+  if (!message) return { error:'กรุณาพิมพ์คำถาม' };
+  var key = getConfig('gemini_api_key');
+  if (!key) return { error:'ยังไม่ได้ตั้งค่า Gemini API Key (ใส่ในแท็บ Config ช่อง key = gemini_api_key)' };
+  var prompt = getConfig('chatbot_prompt') ||
+    'คุณคือ "ครูประกันภัย" ผู้ช่วยสอนวิชาการประกันภัยระดับ ปวช. ตอบเป็นภาษาไทยที่สุภาพ เป็นกันเอง เข้าใจง่าย กระชับ ยกตัวอย่างใกล้ตัวนักเรียน ' +
+    'ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ไม่ต้องยาวเกินไป';
+  var model = getConfig('gemini_model') || 'gemini-2.0-flash';
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
+  try {
+    var res = UrlFetchApp.fetch(url, { method:'post', contentType:'application/json',
+      payload: JSON.stringify({
+        contents:[{ role:'user', parts:[{ text: message }] }],
+        systemInstruction:{ parts:[{ text: prompt }] },
+        generationConfig:{ temperature:0.4, maxOutputTokens:600 }
+      }), muteHttpExceptions:true });
+    var data = JSON.parse(res.getContentText());
+    var reply = '';
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
+      reply = data.candidates[0].content.parts[0].text;
+    else if (data.error) return { error:'AI ขัดข้อง: ' + (data.error.message||'') };
+    if (!reply) reply = 'ขออภัยค่ะ ตอบไม่ได้ในตอนนี้ ลองถามใหม่อีกครั้งนะคะ';
+    S_Chat().appendRow([sid||'', message, reply, new Date()]);
+    return { reply: reply };
+  } catch(err) { return { error:'AI ตอบไม่ได้: ' + String(err) }; }
 }
