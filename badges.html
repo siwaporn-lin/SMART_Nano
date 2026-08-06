@@ -3,39 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Badge</title>
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=10">
+<title>เหรียญตรา · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
-<div class="header"><h1>🎖️ Badge ของฉัน</h1><p id="badgeCount">-</p></div>
-<div class="container">
-  <div class="card"><h2>💡 กลุ่มคิดสร้างสรรค์</h2><div class="badge-grid" id="g1"></div></div>
-  <div class="card"><h2>📢 กลุ่มสื่อสาร</h2><div class="badge-grid" id="g2"></div></div>
-  <div class="card"><h2>🤝 กลุ่มทีมเวิร์ค</h2><div class="badge-grid" id="g3"></div></div>
-  <div class="card"><h2>💻 กลุ่มดิจิทัล</h2><div class="badge-grid" id="g4"></div></div>
-</div>
-<script src="config.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<div class="header"><h1>🎖️ เหรียญตราของฉัน</h1><p id="bCount">-</p></div>
+<div class="container" id="area"><div class="spin"></div></div>
+
+<script src="config.js?v=20"></script>
+<script src="data.js?v=20"></script>
+<script src="app.js?v=20"></script>
 <script>
-var groupMap = { 'คิดสร้างสรรค์':'g1', 'สื่อสาร':'g2', 'ทีมเวิร์ค':'g3', 'ดิจิทัล':'g4' };
-window.addEventListener('DOMContentLoaded', function() {
-  var SID = getSid();
-  if (!SID) { document.querySelector('.container').innerHTML='<div class="card" style="text-align:center;"><p>กรุณาเข้าสู่ระบบก่อน</p><a class="btn" href="index.html">กลับหน้าแรก</a></div>'; return; }
-  buildNav('badges', SID);
-  callAPI('getBadges', { student: SID }, render);
+var SID='';
+var GROUPS=[['สมรรถนะ','🧠 สมรรถนะสูง 4 ด้าน'],['หน่วย','🥇 ตราประจำหน่วย'],
+            ['SMART','⭐ ดาว SMART'],['หมุดหมาย','🌟 หมุดหมาย']];
+window.addEventListener('DOMContentLoaded', function(){
+  SID=requireSid(); if(!SID) return;
+  buildNav('badges');
+  callAPI('getProgress', { student:SID }, function(r){
+    var earned=(r&&r.badges)?r.badges:[];
+    render(earned);
+  });
 });
-function render(badges) {
-  if (badges.error) return;
-  var earned = 0;
-  for (var i=0;i<badges.length;i++) {
-    var b = badges[i];
-    if (b.earned) earned++;
-    var gid = groupMap[b.competency_group] || 'g1';
-    var box = document.getElementById(gid);
-    if (box) box.innerHTML += '<div class="badge-item '+(b.earned?'earned':'locked')+'"><div class="icon">'+(b.icon_emoji||'🎖️')+'</div><div class="name">'+b.badge_name+'</div></div>';
-  }
-  document.getElementById('badgeCount').textContent = 'ได้แล้ว ' + earned + ' จาก ' + badges.length + ' Badge';
+function render(earned){
+  var got={}; earned.forEach(function(id){ got[id]=1; });
+  var el=document.getElementById('area'); el.innerHTML='';
+  document.getElementById('bCount').textContent='ได้แล้ว '+earned.length+' / '+D.badges.length+' เหรียญ';
+  GROUPS.forEach(function(g){
+    var items=D.badges.filter(function(b){ return b.group===g[0]; });
+    if (!items.length) return;
+    var sec=document.createElement('div'); sec.className='fade-in';
+    var grid='<div class="badge-grid">';
+    items.forEach(function(b){
+      var on=got[b.id]?'earned':'';
+      grid+='<div class="badge '+on+'" title="'+esc(b.desc)+'"><div class="ic">'+b.icon+'</div>'+
+        '<div class="bn">'+esc(b.name)+'</div></div>';
+    });
+    grid+='</div>';
+    sec.innerHTML='<div class="section-title">'+g[1]+'</div>'+grid;
+    el.appendChild(sec);
+  });
+  var tip=document.createElement('div'); tip.className='card muted fade-in'; tip.style.marginTop='16px';
+  tip.innerHTML='แตะที่เหรียญเพื่อดูเงื่อนไข · เหรียญสีจางคือยังไม่ได้ 💪';
+  el.appendChild(tip);
 }
 </script>
 </body>

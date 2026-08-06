@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เรียนรู้ · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20">
+</head>
+<body>
+<div class="header"><h1>📚 ภารกิจพิชิตดาว</h1><p>เลือกหน่วยแล้วเดินตามขั้น S · M · A</p></div>
+<div class="container" id="list"><div class="spin"></div></div>
+
+<script src="config.js?v=20"></script>
+<script src="data.js?v=20"></script>
+<script src="app.js?v=20"></script>
+<script>
+var SID='', PROG={topics:{},units:{}};
+window.addEventListener('DOMContentLoaded', function(){
+  SID=requireSid(); if(!SID) return;
+  buildNav('learn');
+  callAPI('getProgress', { student:SID }, function(r){
+    if (!r.error){ PROG=r; }
+    render();
+  });
+});
+
+function smaCount(uid){
+  var ts=topicsOfUnit(uid), done=0;
+  ts.forEach(function(t){ var p=PROG.topics[t.id]; if (p&&p.S&&p.M&&p.A) done++; });
+  return { done:done, total:ts.length };
+}
+function render(){
+  var el=document.getElementById('list'); el.innerHTML='';
+  D.units.forEach(function(u){
+    var c=smaCount(u.id), pct=c.total?Math.round(c.done/c.total*100):0;
+    var card=document.createElement('div'); card.className='card fade-in';
+    card.innerHTML=
+      '<div class="unit-card" onclick="toggle('+u.id+')">'+
+        '<div class="unit-ic" style="background:'+u.color+'">'+u.icon+'</div>'+
+        '<div class="unit-body"><div class="unit-title">หน่วย '+u.id+' · '+esc(u.name)+'</div>'+
+          '<div class="unit-sub">'+c.done+'/'+c.total+' เรื่อง'+(pct===100?' ✅ ครบแล้ว':'')+'</div>'+
+          '<div class="uprog"><i style="width:'+pct+'%"></i></div>'+
+        '</div><div class="chev" id="chev'+u.id+'">›</div>'+
+      '</div>'+
+      '<div id="body'+u.id+'" style="display:none;margin-top:6px;"></div>';
+    el.appendChild(card);
+  });
+}
+function toggle(uid){
+  var body=document.getElementById('body'+uid), chev=document.getElementById('chev'+uid);
+  if (body.style.display==='none'){ body.style.display='block'; chev.textContent='⌄'; fillTopics(uid,body); }
+  else { body.style.display='none'; chev.textContent='›'; }
+}
+function fillTopics(uid, body){
+  var html='';
+  topicsOfUnit(uid).forEach(function(t){
+    var p=PROG.topics[t.id]||{};
+    function chip(on,ic){ return '<span class="'+(on?'on':'')+'">'+ic+'</span>'; }
+    html+='<a class="topic-item" href="topic.html?topic='+encodeURIComponent(t.id)+'">'+
+      '<div class="topic-no">'+t.id+'</div>'+
+      '<div class="topic-name">'+esc(t.name)+'</div>'+
+      '<div class="sma">'+chip(p.S,'▶')+chip(p.M,'📖')+chip(p.A,'✏️')+'</div>'+
+    '</a>';
+  });
+  // ขั้น R-T ระดับหน่วย (ปลดล็อกเมื่อครบทุกเรื่อง)
+  var c=smaCount(uid), full=(c.done===c.total && c.total>0);
+  var up=PROG.units[uid]||{};
+  html+='<div style="margin-top:12px;">';
+  if (full){
+    html+='<div class="section-title" style="margin-top:6px;">🎯 ภารกิจปิดหน่วย (R · T)</div>';
+    html+=stepBtn('R', up.R, 'reflect', uid, '💭 สะท้อนคิด (Report & Reflect)');
+    html+=stepBtn('T', up.T, 'transfer', uid, '🚀 ถ่ายทอด/ต่อยอด (Transfer)');
+  } else {
+    html+='<div class="muted" style="padding:8px 4px;">🔒 ทำ S·M·A ให้ครบทุกเรื่องในหน่วย เพื่อปลดล็อกขั้น R·T</div>';
+  }
+  html+='</div>';
+  body.innerHTML=html;
+}
+function stepBtn(stage, done, action, uid, label){
+  if (done) return '<button class="btn green" disabled>'+label+' ✅</button>';
+  return '<button class="btn amber" onclick="doUnitStage(\''+action+'\','+uid+',this)">'+label+'</button>';
+}
+function doUnitStage(action, uid, btn){
+  btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  callAPI(action, { student:SID, unit:uid }, function(r){
+    if (r.error){ toast('❌ '+r.error); btn.disabled=false; return; }
+    toast('🎉 สำเร็จ! +'+(r.awarded||0)+' คะแนน');
+    callAPI('getProgress',{student:SID},function(p){ if(!p.error) PROG=p; var body=document.getElementById('body'+uid); fillTopics(uid,body); });
+  });
+}
+</script>
+</body>
+</html>

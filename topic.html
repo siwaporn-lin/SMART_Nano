@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เรื่อง · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20">
+</head>
+<body>
+<div class="header"><h1 id="tTitle">กำลังโหลด...</h1><p id="tUnit"></p></div>
+<div class="container" id="area"><div class="spin"></div></div>
+
+<script src="config.js?v=20"></script>
+<script src="data.js?v=20"></script>
+<script src="app.js?v=20"></script>
+<script>
+var SID='', TID='', T=null, P={};
+window.addEventListener('DOMContentLoaded', function(){
+  SID=requireSid(); if(!SID) return;
+  buildNav('learn');
+  TID=new URLSearchParams(location.search).get('topic')||'';
+  T=topicById(TID);
+  if (!T){ document.getElementById('area').innerHTML='<div class="card center">ไม่พบเรื่องนี้ <a class="btn" href="learn.html">กลับ</a></div>'; return; }
+  var u=unitById(T.unit);
+  document.getElementById('tTitle').textContent=T.id+' '+T.name;
+  document.getElementById('tUnit').textContent=(u?('หน่วย '+u.id+' · '+u.name):'');
+  load();
+});
+function load(){
+  callAPI('getProgress', { student:SID }, function(r){
+    P=(r.error?{}:( (r.topics&&r.topics[TID])||{} ));
+    render();
+  });
+}
+function render(){
+  var q=quizOfTopic(TID);
+  function step(stage,color,label,sub,done,btnHtml){
+    return '<div class="smart-step '+(done?'done':'')+'">'+
+      '<div class="step-badge" style="background:'+color+'">'+stage+'</div>'+
+      '<div class="step-body"><div class="step-title">'+label+'</div><div class="step-sub">'+sub+'</div></div>'+
+      (done?'<div class="step-check">✅</div>':btnHtml)+'</div>';
+  }
+  var html='<div class="card fade-in">';
+  html+='<p class="muted" style="margin-top:0;">ทำครบ 3 ขั้นเพื่อพิชิตเรื่องนี้ ⭐</p>';
+  // S
+  html+=step('S','#6366F1','ดูวิดีโอ','ขั้นกำหนดสถานการณ์',P.S,
+    T.video?'<button class="btn sm cyan" onclick="openMedia(\'S\')">เปิด ▶</button>':'<span class="pill gray">ไม่มีสื่อ</span>');
+  // M
+  html+=step('M','#EC4899','อ่าน eBook','ขั้นเชื่อมโยงความรู้',P.M,
+    T.ebook?'<button class="btn sm pink" onclick="openMedia(\'M\')">เปิด 📖</button>':'<span class="pill gray">ไม่มีสื่อ</span>');
+  // A
+  var aSub = (P.quiz!=null)?('คะแนนล่าสุด '+P.quiz+'%'):'ขั้นลงมือทำจริง';
+  html+=step('A','#10B981','ทำแบบทดสอบ',aSub,P.A,
+    (q.length?'<button class="btn sm green" onclick="goQuiz()">ทำ ✏️</button>':'<span class="pill gray">ยังไม่มี</span>'));
+  html+='</div>';
+  html+='<a class="btn ghost" href="learn.html">‹ กลับไปเลือกเรื่อง</a>';
+  document.getElementById('area').innerHTML=html;
+}
+function openMedia(stage){
+  var url=(stage==='S')?T.video:T.ebook;
+  if (!url) return;
+  window.open(url,'_blank');
+  if (!P[stage]){
+    callAPI('track', { student:SID, topic:TID, stage:stage }, function(r){
+      if (r && (r.ok)){ P[stage]=true; if(r.awarded) toast('เช็คอินขั้น '+stage+' +'+r.awarded+' คะแนน 🌟'); render(); }
+    });
+  }
+}
+function goQuiz(){ location.href='quiz.html?topic='+encodeURIComponent(TID); }
+</script>
+</body>
+</html>

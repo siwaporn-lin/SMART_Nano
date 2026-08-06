@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กำลังพาไป... · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="container" style="padding-top:60px;text-align:center;">
+  <div class="card fade-in">
+    <div style="font-size:2.6rem;">🌟</div>
+    <h2 id="msg">กำลังเช็คอินภารกิจ...</h2>
+    <div class="spin"></div>
+    <p class="muted" id="sub">อีกครู่จะพาไปยังสื่อการเรียนรู้</p>
+    <a class="btn ghost" id="manual" style="display:none;" href="#">แตะที่นี่ถ้าไม่ไปอัตโนมัติ</a>
+  </div>
+</div>
+
+<script src="config.js?v=20"></script>
+<script src="data.js?v=20"></script>
+<script src="app.js?v=20"></script>
+<script>
+var qp=new URLSearchParams(location.search);
+var TID=(qp.get('topic')||'').trim();
+var TYPE=(qp.get('type')||'video').trim();   // video | ebook | checkin
+var T=topicById(TID);
+var STAGE=(TYPE==='ebook')?'M':'S';
+var DEST=destUrl();
+
+function destUrl(){
+  if (!T) return 'learn.html';
+  if (TYPE==='ebook') return T.ebook || ('topic.html?topic='+encodeURIComponent(TID));
+  if (TYPE==='video') return T.video || ('topic.html?topic='+encodeURIComponent(TID));
+  return 'topic.html?topic='+encodeURIComponent(TID);   // checkin
+}
+function finish(){
+  document.getElementById('msg').textContent='ไปกันเลย! 🚀';
+  var m=document.getElementById('manual'); m.href=DEST; m.style.display='flex';
+  location.href=DEST;
+}
+
+window.addEventListener('DOMContentLoaded', function(){
+  if (!T){ location.href='learn.html'; return; }
+  document.getElementById('sub').textContent=T.id+' '+T.name;
+  var hasLiff=(typeof liff!=='undefined') && (typeof LIFF_ID!=='undefined') && LIFF_ID;
+  if (hasLiff){
+    liff.init({ liffId: LIFF_ID }).then(function(){
+      if (liff.isLoggedIn()){
+        liff.getProfile().then(function(p){
+          var nameB64=''; try{ nameB64=btoa(unescape(encodeURIComponent(p.displayName||''))); }catch(e){}
+          callAPI('lineLogin',{ line:p.userId, name:nameB64, picture:p.pictureUrl||'' }, function(r){
+            if (r && r.student_id){ setSid(r.student_id); doTrack(r.student_id); }
+            else finish();
+          });
+        }).catch(useSidOrLogin);
+      } else { liff.login(); }
+    }).catch(useSidOrLogin);
+  } else { useSidOrLogin(); }
+});
+
+function useSidOrLogin(){
+  var sid=getSid();
+  if (sid) doTrack(sid); else finish();   // ไม่มี session -> พาไปสื่อเลย (เก็บภายหลังผ่านแอป)
+}
+function doTrack(sid){
+  callAPI('track', { student:sid, topic:TID, stage:STAGE }, function(r){
+    finish();
+  });
+  setTimeout(finish, 4000);  // กันค้าง
+}
+</script>
+</body>
+</html>

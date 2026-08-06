@@ -1,159 +1,160 @@
-/* ============================================================
-   SMART Nano Learning — ธีมการ์ตูนน่ารัก (ชมพู-ม่วง พาสเทล)
-   ============================================================ */
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Prompt',sans-serif; }
-body {
-  background:#fbf1fa;
-  background-image:radial-gradient(circle at 12% 8%, #ffe3f3 0, rgba(255,227,243,0) 42%),
-                   radial-gradient(circle at 88% 4%, #ece2ff 0, rgba(236,226,255,0) 40%);
-  color:#4a2a5c;
-  padding-bottom:86px;
+/* ===== SMART Nano Learning — ธีมสดใส เฟรนลี่ ===== */
+:root{
+  --pink:#EC4899; --purple:#8B5CF6; --indigo:#6366F1; --cyan:#06B6D4;
+  --amber:#F59E0B; --green:#10B981; --red:#EF4444;
+  --ink:#1f2937; --muted:#6b7280; --line:#eef0f6;
+  --bg:#fbf7ff; --card:#ffffff;
+  --grad:linear-gradient(135deg,#a78bfa 0%,#ec4899 100%);
+  --shadow:0 8px 24px rgba(139,92,246,.12);
+  --radius:20px;
 }
-
-/* ===== ส่วนหัว ===== */
-.header {
-  background:linear-gradient(135deg,#ff7ab8 0%,#a06bff 100%);
-  color:#fff; padding:22px 16px 24px; text-align:center;
-  border-radius:0 0 32px 32px;
-  box-shadow:0 8px 24px rgba(160,107,255,0.28);
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Prompt',system-ui,sans-serif;color:var(--ink);
+  background:var(--bg);padding-bottom:84px;line-height:1.55;
+  background-image:radial-gradient(circle at 10% 0,#f3e8ff 0,transparent 40%),
+                   radial-gradient(circle at 100% 0,#ffe4f1 0,transparent 40%);
 }
-.header h1 { font-size:1.35rem; font-weight:700; }
-.header p { font-size:0.85rem; opacity:0.95; margin-top:4px; }
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
 
-.container { max-width:480px; margin:0 auto; padding:16px; }
+/* ===== หัวเรื่อง ===== */
+.header{background:var(--grad);color:#fff;padding:22px 18px 26px;border-radius:0 0 28px 28px;
+  box-shadow:var(--shadow);text-align:center}
+.header h1{margin:0;font-size:1.35rem;font-weight:700}
+.header p{margin:4px 0 0;font-size:.86rem;opacity:.95}
+
+.container{max-width:640px;margin:0 auto;padding:16px}
 
 /* ===== การ์ด ===== */
-.card {
-  background:#fff; border-radius:26px; padding:18px; margin-bottom:14px;
-  box-shadow:0 6px 20px rgba(160,107,255,0.10);
-  border:1px solid #f4e6fa;
-}
-.card h2 { font-size:1.08rem; font-weight:700; margin-bottom:10px; color:#a04bd0; }
-.muted { font-size:0.85rem; color:#9b83ac; }
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;
+  box-shadow:var(--shadow);border:1px solid var(--line)}
+.card h2{margin:0 0 8px;font-size:1.05rem}
+.muted{color:var(--muted);font-size:.85rem}
+.center{text-align:center}
 
-/* ===== ปุ่ม (ทรงแคปซูล) ===== */
-.btn {
-  display:block; width:100%; padding:15px; border:none; border-radius:999px;
-  font-size:1rem; font-weight:600; cursor:pointer; text-align:center; text-decoration:none;
-  color:#fff; margin-top:10px;
-  background:linear-gradient(135deg,#ff7ab8,#a06bff);
-  box-shadow:0 6px 16px rgba(160,107,255,0.30);
-  transition:transform 0.08s ease;
-}
-.btn:active { transform:scale(0.97); }
-.btn.green  { background:linear-gradient(135deg,#4ee0a0,#22b573); box-shadow:0 6px 16px rgba(34,181,115,0.30); }
-.btn.orange { background:linear-gradient(135deg,#ffc46b,#ff9a3d); box-shadow:0 6px 16px rgba(255,154,61,0.30); }
-.btn.gray   { background:linear-gradient(135deg,#cbb6e6,#a892c9); box-shadow:0 6px 16px rgba(168,146,201,0.28); }
-.btn.red    { background:linear-gradient(135deg,#ff8aa0,#ff5b78); box-shadow:0 6px 16px rgba(255,91,120,0.28); }
+/* ===== ปุ่ม ===== */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px 16px;margin:8px 0;border:none;border-radius:16px;cursor:pointer;
+  font-family:inherit;font-size:1rem;font-weight:600;color:#fff;background:var(--indigo);
+  box-shadow:0 4px 12px rgba(99,102,241,.28);transition:transform .08s ease,filter .15s}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn:hover{filter:brightness(1.05)}
+.btn.pink{background:var(--pink);box-shadow:0 4px 12px rgba(236,72,153,.3)}
+.btn.purple{background:var(--purple)}
+.btn.green{background:var(--green);box-shadow:0 4px 12px rgba(16,185,129,.28)}
+.btn.amber{background:var(--amber);color:#4a2c00}
+.btn.cyan{background:var(--cyan)}
+.btn.gray{background:#eef2ff;color:#4338ca;box-shadow:none}
+.btn.red{background:#fee2e2;color:#b91c1c;box-shadow:none}
+.btn.ghost{background:#fff;color:var(--indigo);border:1.5px solid #e5e7ff;box-shadow:none}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.btn.sm{width:auto;padding:9px 14px;font-size:.85rem;margin:0}
 
-select, input {
-  width:100%; padding:13px 16px; border-radius:16px; border:2px solid #f0e0f7;
-  font-size:1rem; background:#fdf7ff; color:#4a2a5c;
-}
-select:focus, input:focus { outline:none; border-color:#c99bec; }
+select{width:100%;padding:13px;border:1.5px solid #e5e7ff;border-radius:14px;
+  font-family:inherit;font-size:1rem;background:#fff;margin:6px 0}
 
-/* ===== แถวสถิติ (โปรไฟล์เก่า/หน้าอื่น) ===== */
-.stat-row { display:flex; gap:10px; margin-top:12px; }
-.stat-box { flex:1; text-align:center; padding:14px; border-radius:18px; }
-.stat-box .num { font-size:1.5rem; font-weight:700; }
-.stat-box .label { font-size:0.75rem; }
+/* ===== โปรไฟล์ ===== */
+.profile-top{background:var(--grad);color:#fff;padding:20px 18px 24px;border-radius:0 0 28px 28px;box-shadow:var(--shadow)}
+.profile-row{display:flex;align-items:center;gap:14px;max-width:640px;margin:0 auto}
+.avatar{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;overflow:hidden;flex:0 0 auto}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.profile-info{flex:1;min-width:0}
+.pname{font-size:1.15rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plevel{font-size:.82rem;opacity:.95}
+.ppoints{text-align:center}
+.ppoints .num{font-size:1.6rem;font-weight:700;line-height:1}
+.ppoints .unit{font-size:.72rem;opacity:.9}
+.level-wrap{max-width:640px;margin:14px auto 0}
+.level-label{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:5px;opacity:.95}
+.level-bar{height:10px;background:rgba(255,255,255,.3);border-radius:99px;overflow:hidden}
+.level-fill{height:100%;background:#fff;border-radius:99px;transition:width .6s}
+.mini-stats{display:flex;gap:10px;max-width:640px;margin:14px auto 0}
+.mini{flex:1;background:rgba(255,255,255,.18);border-radius:14px;padding:10px;text-align:center}
+.mini-num{font-size:1.15rem;font-weight:700}
+.mini-label{font-size:.72rem;opacity:.9}
 
-/* ===== Badge ===== */
-.badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.badge-item { text-align:center; padding:14px 6px; border-radius:20px; background:#faf4ff; border:2px solid #f0e4fb; }
-.badge-item.earned { background:linear-gradient(135deg,#fff3fb,#fbeaff); border-color:#ffb3e2; box-shadow:0 4px 12px rgba(255,120,190,0.20); }
-.badge-item.locked { opacity:0.4; filter:grayscale(0.8); }
-.badge-item .icon { font-size:2rem; }
-.badge-item .name { font-size:0.7rem; margin-top:4px; font-weight:600; }
+/* ===== หน่วย / เรื่อง ===== */
+.unit-card{display:flex;align-items:center;gap:14px;cursor:pointer}
+.unit-ic{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;color:#fff;flex:0 0 auto}
+.unit-body{flex:1;min-width:0}
+.unit-title{font-weight:600;font-size:.98rem}
+.unit-sub{font-size:.78rem;color:var(--muted)}
+.chev{color:#c7cbe0;font-size:1.3rem}
+.uprog{height:7px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.uprog>i{display:block;height:100%;border-radius:99px;background:var(--grad)}
 
-/* ===== ตารางอันดับ ===== */
-.lb-row {
-  display:flex; align-items:center; padding:12px 14px; border-radius:20px; margin-bottom:8px;
-  background:#fff; box-shadow:0 3px 10px rgba(160,107,255,0.08);
-}
-.lb-row.top1 { background:linear-gradient(90deg,#fff6da,#fff); border-left:5px solid #ffcf3f; }
-.lb-row.top2 { background:linear-gradient(90deg,#f6f0ff,#fff); border-left:5px solid #c0a6e6; }
-.lb-row.top3 { background:linear-gradient(90deg,#ffeede,#fff); border-left:5px solid #ffb36b; }
-.lb-row.me { border:2px solid #ff7ab8; }
-.lb-rank { font-size:1.1rem; font-weight:700; width:38px; color:#a04bd0; }
-.lb-name { flex:1; font-size:0.9rem; }
-.lb-points { font-weight:700; color:#e0559b; }
+.topic-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.topic-item:last-child{border-bottom:none}
+.topic-no{width:38px;height:38px;border-radius:12px;background:#f5f3ff;color:var(--purple);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;flex:0 0 auto}
+.topic-name{flex:1;font-size:.9rem;min-width:0}
+.sma{display:flex;gap:4px;flex:0 0 auto}
+.sma span{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;background:#eef0f6;color:#b6bcd0}
+.sma span.on{background:var(--green);color:#fff}
+
+/* ===== ขั้น SMART บนหน้าเรื่อง ===== */
+.smart-step{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;
+  border:1.5px solid var(--line);margin-bottom:10px;background:#fff}
+.smart-step.done{border-color:#bbf7d0;background:#f0fdf4}
+.step-badge{width:44px;height:44px;border-radius:14px;color:#fff;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:1.1rem;flex:0 0 auto}
+.step-body{flex:1;min-width:0}
+.step-title{font-weight:600;font-size:.95rem}
+.step-sub{font-size:.76rem;color:var(--muted)}
+.step-check{font-size:1.3rem;color:var(--green)}
 
 /* ===== Quiz ===== */
-.quiz-q { margin-bottom:12px; }
-.quiz-q .q-text { font-weight:600; margin-bottom:12px; }
-.quiz-choice {
-  display:block; padding:14px; margin-bottom:9px; border:2px solid #f0e4fb; border-radius:16px;
-  cursor:pointer; background:#fdf9ff; font-size:0.92rem;
-}
-.quiz-choice.selected { border-color:#ff7ab8; background:#fff0f8; color:#d43f92; font-weight:600; }
-.result-box { text-align:center; padding:32px 20px; }
-.result-box .big { font-size:3.2rem; }
-.result-box .score { font-size:2.1rem; font-weight:700; color:#a04bd0; margin:10px 0; }
+.q-text{font-weight:600;margin-bottom:10px;font-size:.98rem}
+.quiz-choice{display:block;padding:12px 14px;margin:8px 0;border:1.5px solid #e5e7ff;border-radius:14px;
+  cursor:pointer;font-size:.92rem;transition:.12s;background:#fff}
+.quiz-choice:active{transform:scale(.99)}
+.quiz-choice.selected{border-color:var(--purple);background:#f5f3ff;font-weight:600}
+.result-box{text-align:center}
+.result-box .big{font-size:3rem}
+.result-box .score{font-size:2.2rem;font-weight:700;color:var(--purple)}
+
+/* ===== Badge ===== */
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.badge{background:#fff;border-radius:16px;padding:14px 8px;text-align:center;border:1px solid var(--line);
+  box-shadow:var(--shadow)}
+.badge .ic{font-size:2rem;filter:grayscale(1);opacity:.35}
+.badge.earned .ic{filter:none;opacity:1}
+.badge .bn{font-size:.72rem;margin-top:6px;font-weight:600;line-height:1.2}
+.badge.earned{background:linear-gradient(135deg,#fff7ed,#fef2f8)}
+.section-title{font-weight:700;margin:18px 4px 8px;font-size:.95rem;color:var(--purple)}
+
+/* ===== อันดับ ===== */
+.rank-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.rank-num{width:30px;text-align:center;font-weight:700;color:var(--muted)}
+.rank-row.me{background:#f5f3ff;border-radius:12px;padding:12px}
+.rank-name{flex:1}
+.rank-pts{font-weight:700;color:var(--purple)}
+.medal{font-size:1.2rem}
 
 /* ===== แถบเมนูล่าง ===== */
-.nav {
-  position:fixed; bottom:0; left:0; right:0; background:#fff; display:flex;
-  box-shadow:0 -3px 16px rgba(160,107,255,0.14); max-width:480px; margin:0 auto;
-  border-radius:24px 24px 0 0;
-}
-.nav a { flex:1; text-align:center; padding:11px 4px; text-decoration:none; color:#b9a3c9; font-size:0.62rem; font-weight:500; }
-.nav a.active { color:#ec4899; }
-.nav a .ic { font-size:1.35rem; display:block; margin-bottom:1px; }
+.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;display:flex;justify-content:space-around;
+  padding:8px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 18px rgba(99,102,241,.1);
+  border-top:1px solid var(--line);z-index:50}
+.nav a{flex:1;text-align:center;font-size:.66rem;color:#9aa0b8;padding:2px}
+.nav a .ic{display:block;font-size:1.25rem;margin-bottom:1px}
+.nav a.active{color:var(--pink);font-weight:600}
 
-.loading { text-align:center; padding:44px; color:#b9a3c9; }
-
-/* ===== เช็คอิน ===== */
-.checkin-item {
-  display:flex; align-items:center; padding:13px; border-radius:18px; margin-bottom:9px;
-  background:#fff; border:2px solid #f0e4fb;
-}
-.checkin-item.done { border-color:#4ee0a0; background:#edfcf5; }
-.checkin-item .ci-icon { font-size:1.5rem; margin-right:12px; }
-.checkin-item .ci-name { flex:1; font-size:0.85rem; }
-.checkin-item .ci-status { font-size:1.2rem; }
-
-.scan-card { text-align:center; }
-.scan-icon { font-size:2.8rem; margin-bottom:6px; }
-.ci-msg { margin-top:12px; font-size:0.92rem; font-weight:600; min-height:1px; }
-.ci-msg.ok  { color:#22b573; background:#e9fbf2; padding:11px; border-radius:14px; }
-.ci-msg.err { color:#e0559b; background:#fdecf5; padding:11px; border-radius:14px; }
-
-/* ===== แชต (สำรอง) ===== */
-.chat-area { height:400px; overflow-y:auto; padding:8px; background:#fdf7ff; border-radius:18px; margin-bottom:10px; }
-.chat-msg { margin-bottom:10px; display:flex; }
-.chat-msg.user { justify-content:flex-end; }
-.chat-bubble { max-width:80%; padding:11px 15px; border-radius:18px; font-size:0.9rem; line-height:1.4; }
-.chat-msg.user .chat-bubble { background:linear-gradient(135deg,#ff7ab8,#a06bff); color:#fff; border-bottom-right-radius:5px; }
-.chat-msg.bot .chat-bubble { background:#fff; border:1px solid #f0e4fb; border-bottom-left-radius:5px; }
-.chat-input-row { display:flex; gap:8px; }
-.chat-input-row input { flex:1; }
-.chat-input-row button { width:auto; padding:13px 22px; margin:0; }
-
-/* ===== แดชบอร์ดโปรไฟล์ ===== */
-.profile-top {
-  background:linear-gradient(135deg,#ff7ab8 0%,#a06bff 100%);
-  color:#fff; padding:22px 16px 18px; border-radius:0 0 30px 30px;
-  max-width:480px; margin:0 auto; box-shadow:0 8px 24px rgba(160,107,255,0.28);
-}
-.profile-row { display:flex; align-items:center; gap:12px; }
-.avatar {
-  width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.28);
-  display:flex; align-items:center; justify-content:center; font-size:1.9rem; font-weight:700;
-  flex-shrink:0; overflow:hidden; border:3px solid rgba(255,255,255,0.6);
-}
-.avatar img { width:100%; height:100%; object-fit:cover; }
-.profile-info { flex:1; min-width:0; }
-.pname { font-size:1.22rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.plevel { font-size:0.8rem; opacity:0.95; margin-top:2px; }
-.ppoints { text-align:right; }
-.ppoints .num { font-size:1.9rem; font-weight:700; line-height:1; }
-.ppoints .unit { font-size:0.7rem; opacity:0.95; }
-.level-wrap { margin-top:15px; }
-.level-label { display:flex; justify-content:space-between; font-size:0.75rem; opacity:0.97; margin-bottom:5px; }
-.level-bar { height:10px; background:rgba(255,255,255,0.32); border-radius:8px; overflow:hidden; }
-.level-fill { height:100%; background:linear-gradient(90deg,#ffe16b,#ffd23f); border-radius:8px; transition:width 0.6s ease; }
-.mini-stats { display:flex; gap:10px; margin-top:16px; }
-.mini { flex:1; text-align:center; background:rgba(255,255,255,0.20); border-radius:18px; padding:11px 4px; }
-.mini-num { font-size:1.18rem; font-weight:700; }
-.mini-label { font-size:0.7rem; opacity:0.95; margin-top:2px; }
+/* ===== อื่นๆ ===== */
+.loading{text-align:center;color:var(--muted);padding:30px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#111827;color:#fff;
+  padding:12px 18px;border-radius:14px;font-size:.88rem;box-shadow:0 8px 20px rgba(0,0,0,.25);
+  z-index:99;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600}
+.pill.green{background:#dcfce7;color:#166534}
+.pill.gray{background:#f1f5f9;color:#64748b}
+.spin{width:34px;height:34px;border:3px solid #e9d5ff;border-top-color:var(--purple);border-radius:50%;
+  animation:sp 1s linear infinite;margin:20px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fade-in{animation:fi .35s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}

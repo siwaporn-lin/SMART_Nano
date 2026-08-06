@@ -1,349 +1,234 @@
 /**
- * SMART Nano Learning — Google Apps Script API (เวอร์ชัน JSONP)
- * ใช้กับ Frontend ที่วางบน GitHub Pages
+ * SMART Nano Learning - Backend (Google Apps Script, JSONP)
+ * เก็บเฉพาะ "ข้อมูลนักเรียน" (เนื้อหา+ข้อสอบอยู่ใน data.js ฝั่งเว็บ)
+ * ชีตทั้งหมดสร้างอัตโนมัติเมื่อถูกเรียกใช้ครั้งแรก - ไม่ต้องตั้งค่าเอง
  */
+var SS = SpreadsheetApp.getActiveSpreadsheet();
 
-const SS = SpreadsheetApp.getActiveSpreadsheet();
+// ===== ค่าคงที่ =====
+var POINTS = { S:5, M:5, quiz:10, R:15, T:20, badge:20 };
+var QUIZ_PASS = 60;               // ผ่าน >= 60%
+var QUIZ_ANSWERS = {"1.1":{"1":"a","2":"b","3":"c","4":"d","5":"b"},"1.2":{"1":"b","2":"c","3":"a","4":"c","5":"b"},"1.3":{"1":"b","2":"a","3":"b","4":"c","5":"d"},"1.4":{"1":"b","2":"c","3":"a","4":"c","5":"b"},"1.5":{"1":"a","2":"b","3":"c","4":"d","5":"a"},"1.6":{"1":"b","2":"a","3":"b","4":"d","5":"c"},"1.7":{"1":"b","2":"a","3":"b","4":"a","5":"c"},"1.8":{"1":"b","2":"a","3":"b","4":"a","5":"c"},"1.9":{"1":"b","2":"c","3":"a","4":"b","5":"a"},"2.1":{"1":"b","2":"c","3":"d","4":"a","5":"b"},"2.2":{"1":"b","2":"d","3":"c","4":"a","5":"b"},"2.3":{"1":"b","2":"c","3":"d","4":"a","5":"c"},"2.4":{"1":"b","2":"c","3":"c","4":"c","5":"a"},"2.5":{"1":"b","2":"a","3":"c","4":"b","5":"d"},"2.6":{"1":"b","2":"c","3":"a","4":"c","5":"b"},"2.7":{"1":"b","2":"a","3":"a","4":"c","5":"d"},"2.8":{"1":"c","2":"b","3":"b","4":"c","5":"a"},"2.9":{"1":"b","2":"a","3":"c","4":"a","5":"b"},"2.10":{"1":"b","2":"c","3":"b","4":"c","5":"b"},"2.11":{"1":"b","2":"a","3":"a","4":"b","5":"c"},"2.12":{"1":"b","2":"c","3":"b","4":"b","5":"b"},"3.1":{"1":"b","2":"c","3":"b","4":"d","5":"a"},"3.2":{"1":"a","2":"b","3":"c","4":"b","5":"c"},"3.3":{"1":"a","2":"b","3":"c","4":"b","5":"d"},"3.4":{"1":"a","2":"d","3":"b","4":"c","5":"d"},"3.5":{"1":"b","2":"c","3":"d","4":"a","5":"b"},"3.6":{"1":"d","2":"c","3":"b","4":"a","5":"c"},"3.7":{"1":"a","2":"d","3":"b","4":"c","5":"b"},"3.8":{"1":"b","2":"c","3":"c","4":"a","5":"b"},"3.9":{"1":"b","2":"d","3":"c","4":"a","5":"c"},"4.1":{"1":"c","2":"b","3":"d","4":"c","5":"a"},"4.2":{"1":"a","2":"b","3":"c","4":"d","5":"b"},"4.3":{"1":"a","2":"b","3":"c","4":"d","5":"a"},"4.4":{"1":"b","2":"b","3":"c","4":"d","5":"a"},"4.5":{"1":"b","2":"c","3":"d","4":"a","5":"b"},"4.6":{"1":"b","2":"c","3":"a","4":"d","5":"c"},"4.7":{"1":"c","2":"b","3":"a","4":"d","5":"b"},"4.8":{"1":"b","2":"a","3":"c","4":"d","5":"a"},"4.9":{"1":"b","2":"c","3":"d","4":"a","5":"b"},"5.1":{"1":"b","2":"a","3":"c","4":"d","5":"b"},"5.2":{"1":"c","2":"b","3":"d","4":"a","5":"c"},"5.3":{"1":"d","2":"a","3":"c","4":"b","5":"c"},"5.4":{"1":"b","2":"d","3":"a","4":"c","5":"b"},"5.5":{"1":"b","2":"c","3":"b","4":"b","5":"c"},"5.6":{"1":"b","2":"b","3":"c","4":"d","5":"b"},"6.1":{"1":"a","2":"b","3":"c","4":"d","5":"b"},"6.2":{"1":"c","2":"d","3":"a","4":"c","5":"d"},"6.3":{"1":"a","2":"b","3":"d","4":"a","5":"b"},"6.4":{"1":"c","2":"a","3":"b","4":"c","5":"d"},"6.5":{"1":"b","2":"c","3":"d","4":"a","5":"c"},"6.6":{"1":"d","2":"a","3":"b","4":"d","5":"a"},"6.7":{"1":"b","2":"c","3":"a","4":"b","5":"c"},"6.8":{"1":"d","2":"d","3":"c","4":"b","5":"a"}};       // เฉลย (ซ่อนจากนักเรียน)
+var TOPICS_BY_UNIT = {"1":["1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9"],"2":["2.1","2.2","2.3","2.4","2.5","2.6","2.7","2.8","2.9","2.10","2.11","2.12"],"3":["3.1","3.2","3.3","3.4","3.5","3.6","3.7","3.8","3.9"],"4":["4.1","4.2","4.3","4.4","4.5","4.6","4.7","4.8","4.9"],"5":["5.1","5.2","5.3","5.4","5.5","5.6"],"6":["6.1","6.2","6.3","6.4","6.5","6.6","6.7","6.8"]};     // เรื่องในแต่ละหน่วย
+var BADGES = [
+  {id:'C1',rule:'knowledge'}, {id:'C2',rule:'quiz_avg80'}, {id:'C3',rule:'transfer'},
+  {id:'C4',rule:'reflect3'},
+  {id:'U1',rule:'unit',u:1},{id:'U2',rule:'unit',u:2},{id:'U3',rule:'unit',u:3},
+  {id:'U4',rule:'unit',u:4},{id:'U5',rule:'unit',u:5},{id:'U6',rule:'unit',u:6},
+  {id:'S1',rule:'smartstar'},
+  {id:'M1',rule:'topics',n:1},{id:'M2',rule:'topics',n:27},{id:'M3',rule:'topics',n:53}
+];
 
-function doGet(e) {
-  const callback = (e && e.parameter) ? e.parameter.callback : '';
-  const result = processRequest(e);
-  if (callback) {
-    return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ')')
+// ===== HTTP (JSONP) =====
+function doGet(e){
+  var cb = (e && e.parameter) ? e.parameter.callback : '';
+  var out = process(e);
+  if (cb) return ContentService.createTextOutput(cb+'('+JSON.stringify(out)+')')
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(out))
+      .setMimeType(ContentService.MimeType.JSON);
 }
+function doPost(e){ return doGet(e); }
 
-function doPost(e) { return doGet(e); }
-
-function processRequest(e) {
-  const p = (e && e.parameter) || {};
-  const action = p.action || '';
-  // 'sid' เป็นคำสงวนของ Google (Session ID) ถ้าค่ามีตัวอักษรจะถูกเด้ง 400
-  // จึงใช้ชื่อ 'student' แทน แต่ยังรองรับ 'sid' เดิมไว้เผื่อความเข้ากันได้
-  const sid = p.student || p.sid;
+function process(e){
+  var p = (e && e.parameter) || {};
+  var a = p.action || '';
+  var sid = p.student || p.sid;   // 'sid' สงวนโดย Google - ใช้ 'student'
   try {
-    switch (action) {
-      case 'getStudents':    return apiGetAllStudents();
-      case 'getStudent':     return apiGetStudent(sid);
-      case 'getLessons':     return apiGetLessons();
-      case 'getQuiz':        return apiGetQuiz(p.quizId);
-      case 'submitQuiz':     return apiSubmitQuiz(sid, p.quizId, p.answers);
-      case 'getBadges':      return apiGetStudentBadges(sid);
-      case 'getLeaderboard': return apiGetLeaderboard();
-      case 'checkin':        return apiCheckin(sid, p.missionCode);
-      case 'getCheckins':    return apiGetStudentCheckins(sid);
-      case 'chatbot':        return apiChatbot(sid, p.message);
-      case 'getStudentByLine': return apiGetStudentByLine(p.line);
-      case 'linkLine':         return apiLinkLine(p.line, sid, p.name);
-      case 'lineLogin':        return apiLineLogin(p.line, p.name);
-      case 'cleanup':          return apiCleanup(p.key);
-      case 'ping':           return { ok: true, time: new Date() };
-      default:               return { error: 'ไม่รู้จัก action: ' + action };
+    switch(a){
+      case 'ping':          return { ok:true, time:new Date() };
+      case 'getStudents':   return getStudents();
+      case 'lineLogin':     return lineLogin(p.line, p.name, p.picture);
+      case 'linkLine':      return lineLogin(p.line, p.name, p.picture);
+      case 'getStudent':    return getStudent(sid);
+      case 'getProgress':   return getProgress(sid);
+      case 'track':         return track(sid, p.topic, p.stage);
+      case 'submitQuiz':    return submitQuiz(sid, p.topic, p.answers);
+      case 'reflect':       return unitStage(sid, p.unit, 'R');
+      case 'transfer':      return unitStage(sid, p.unit, 'T');
+      case 'checkin':       return checkin(sid, p.missionCode || p.topic);
+      case 'getLeaderboard':return getLeaderboard();
+      default:              return { error:'ไม่รู้จัก action: '+a };
     }
-  } catch (err) { return { error: err.message }; }
+  } catch(err){ return { error: String(err && err.message || err) }; }
 }
 
-function getConfig(key) {
-  const data = SS.getSheetByName('Config').getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) { if (data[i][0] === key) return data[i][1]; }
-  return null;
-}
-
-function sheetToObjects(sheetName) {
-  const sheet = SS.getSheetByName(sheetName);
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  const headers = data[0];
-  return data.slice(1).map(row => {
-    const obj = {}; headers.forEach((h, i) => obj[h] = row[i]); return obj;
-  });
-}
-
-function appendRow(sheetName, arr) { SS.getSheetByName(sheetName).appendRow(arr); }
-function nextId(sheetName) { return SS.getSheetByName(sheetName).getLastRow(); }
-
-function apiGetAllStudents() {
-  return sheetToObjects('Students').filter(s => s.status === 'active')
-    .map(s => ({ student_id: s.student_id, full_name: s.full_name, nickname: s.nickname }));
-}
-
-function apiGetStudent(sid) {
-  const s = sheetToObjects('Students').find(x => x.student_id === sid);
-  if (!s) return { error: 'ไม่พบนักเรียน' };
-  return { student_id: s.student_id, full_name: s.full_name, nickname: s.nickname,
-    total_points: Number(s.total_points) || 0, total_badges: Number(s.total_badges) || 0,
-    total_quiz_passed: Number(s.total_quiz_passed) || 0 };
-}
-
-function apiGetLessons() {
-  return sheetToObjects('Lessons').filter(l => l.status === 'active')
-    .map(l => ({ lesson_id: l.lesson_id, lesson_no: l.lesson_no, lesson_name: l.lesson_name,
-      description: l.description, video_url: l.video_url, infographic_url: l.infographic_url,
-      material_url: l.material_url, quiz_id: l.quiz_id }));
-}
-
-function apiGetQuiz(quizId) {
-  return sheetToObjects('QuizBank').filter(q => q.quiz_id === quizId)
-    .map(q => ({ quiz_id: q.quiz_id, question_no: q.question_no, question: q.question,
-      choice_a: q.choice_a, choice_b: q.choice_b, choice_c: q.choice_c, choice_d: q.choice_d }));
-}
-
-function apiSubmitQuiz(sid, quizId, answersJson) {
-  let answers = {};
-  try { answers = JSON.parse(answersJson); } catch (e) { answers = {}; }
-  const bank = sheetToObjects('QuizBank').filter(q => q.quiz_id === quizId);
-  if (bank.length === 0) return { error: 'ไม่พบชุดข้อสอบ' };
-  let score = 0;
-  bank.forEach(q => { if (answers[String(q.question_no)] === q.answer) score++; });
-  const total = bank.length;
-  const percent = Math.round(score / total * 100);
-  const passPercent = Number(getConfig('quiz_pass_percent') || 60);
-  const passed = percent >= passPercent;
-  const prev = sheetToObjects('QuizResults').filter(r => r.student_id === sid && r.quiz_id === quizId);
-  const attemptNo = prev.length + 1;
-  const now = new Date();
-  appendRow('QuizResults', ['R' + String(nextId('QuizResults')).padStart(4, '0'), sid, quizId, score, total, percent, passed, attemptNo, now, now]);
-  let earnedPoints = 0;
-  const passedBefore = prev.some(r => r.passed === true || r.passed === 'TRUE');
-  if (passed && !passedBefore) {
-    earnedPoints = Number(getConfig('points_per_quiz') || 10);
-    addPoints(sid, earnedPoints, 'quiz', quizId, 'ผ่าน Quiz ' + quizId);
-    updateStudentStat(sid, 'total_quiz_passed', 1);
-    checkBadgeConditions(sid);
-  }
-  return { score, total, percent, passed, attempt: attemptNo, earnedPoints };
-}
-
-function addPoints(sid, pts, srcType, srcId, detail) {
-  appendRow('Points', [nextId('Points'), sid, pts, srcType, srcId, detail, new Date()]);
-  updateStudentStat(sid, 'total_points', pts);
-}
-
-function updateStudentStat(sid, col, add) {
-  const sheet = SS.getSheetByName('Students');
-  const data = sheet.getDataRange().getValues();
-  const ci = data[0].indexOf(col);
-  if (ci === -1) return;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === sid) { sheet.getRange(i + 1, ci + 1).setValue((Number(data[i][ci]) || 0) + add); return; }
-  }
-}
-
-function apiGetStudentBadges(sid) {
-  const earned = sheetToObjects('StudentBadges').filter(b => b.student_id === sid);
-  return sheetToObjects('Badges').map(b => ({ badge_id: b.badge_id, badge_name: b.badge_name,
-    competency_group: b.competency_group, description: b.description, icon_emoji: b.icon_emoji,
-    earned: earned.some(e => e.badge_id === b.badge_id) }));
-}
-
-function awardBadge(sid, badgeId) {
-  if (sheetToObjects('StudentBadges').some(b => b.student_id === sid && b.badge_id === badgeId)) return false;
-  appendRow('StudentBadges', [nextId('StudentBadges'), sid, badgeId, new Date(), 'system']);
-  addPoints(sid, Number(getConfig('points_per_badge') || 20), 'badge', badgeId, 'Badge ' + badgeId);
-  updateStudentStat(sid, 'total_badges', 1);
-  return true;
-}
-
-function checkBadgeConditions(sid) {
-  const results = sheetToObjects('QuizResults').filter(r => r.student_id === sid);
-  const checkins = sheetToObjects('QRCheckin').filter(c => c.student_id === sid);
-  const chats = sheetToObjects('ChatbotLog').filter(c => c.student_id === sid);
-  const passedIds = [...new Set(results.filter(r => r.passed === true || r.passed === 'TRUE').map(r => r.quiz_id))];
-  if (results.length >= 1) awardBadge(sid, 'B10');
-  if (chats.length >= 5) awardBadge(sid, 'B11');
-  if (passedIds.length >= 6 && checkins.length >= 11) awardBadge(sid, 'B12');
-}
-
-function apiGetLeaderboard() {
-  const checkins = sheetToObjects('QRCheckin');
-  const sorted = sheetToObjects('Students').filter(s => s.status === 'active')
-    .map(s => ({ student_id: s.student_id, full_name: s.full_name,
-      total_points: Number(s.total_points) || 0, total_badges: Number(s.total_badges) || 0,
-      total_quiz_passed: Number(s.total_quiz_passed) || 0,
-      checkins: checkins.filter(c => c.student_id === s.student_id).length }))
-    .sort((a, b) => b.total_points - a.total_points);
-  sorted.forEach((s, i) => s.rank = i + 1);
-  return sorted;
-}
-
-function apiCheckin(sid, code) {
-  const m = sheetToObjects('QRMissions').find(x => x.mission_code === code);
-  if (!m) return { error: 'ไม่พบภารกิจนี้' };
-  if (sheetToObjects('QRCheckin').some(c => c.student_id === sid && c.mission_code === code))
-    return { error: 'เช็คอินภารกิจนี้ไปแล้ว', duplicated: true };
-  appendRow('QRCheckin', [nextId('QRCheckin'), sid, code, new Date(), true]);
-  const pts = Number(getConfig('points_per_checkin') || 5);
-  addPoints(sid, pts, 'checkin', code, 'เช็คอิน ' + m.mission_name);
-  checkBadgeConditions(sid);
-  return { success: true, mission: m.mission_name, points: pts };
-}
-
-function apiGetStudentCheckins(sid) {
-  const done = sheetToObjects('QRCheckin').filter(c => c.student_id === sid);
-  return sheetToObjects('QRMissions').map(m => ({ mission_code: m.mission_code,
-    mission_name: m.mission_name, mission_type: m.mission_type,
-    checked: done.some(c => c.mission_code === m.mission_code) }));
-}
-
-function apiChatbot(sid, message) {
-  const apiKey = getConfig('gemini_api_key');
-  if (!apiKey) return { error: 'ยังไม่ได้ตั้งค่า Gemini API Key' };
-  const prompt = getConfig('chatbot_system_prompt') || 'คุณคือครูประกันภัย ตอบภาษาไทย สุภาพ เข้าใจง่าย';
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
-  try {
-    const res = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json',
-      payload: JSON.stringify({ contents: [{ parts: [{ text: message }] }], systemInstruction: { parts: [{ text: prompt }] } }),
-      muteHttpExceptions: true });
-    const data = JSON.parse(res.getContentText());
-    let reply = 'ขออภัย ไม่สามารถตอบได้';
-    if (data.candidates && data.candidates[0] && data.candidates[0].content)
-      reply = data.candidates[0].content.parts[0].text;
-    appendRow('ChatbotLog', [nextId('ChatbotLog'), sid, message, reply, '', 0, new Date()]);
-    if (sid) checkBadgeConditions(sid);
-    return { reply };
-  } catch (err) { return { error: 'AI ตอบไม่ได้: ' + err.message }; }
-}
-
-function setupTriggers() {
-  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('updateDashboard').timeBased().everyHours(1).create();
-}
-
-function updateDashboard() {
-  const students = sheetToObjects('Students').filter(s => s.status === 'active');
-  const results = sheetToObjects('QuizResults');
-  const passed = results.filter(r => r.passed === true || r.passed === 'TRUE');
-  const now = new Date();
-  const vals = [
-    ['นักเรียนทั้งหมด', students.length, 'คน', now],
-    ['นักเรียน Active', [...new Set(results.map(r => r.student_id))].length, 'คน', now],
-    ['Quiz ที่ทำ', results.length, 'ครั้ง', now],
-    ['Quiz ผ่าน', passed.length, 'ครั้ง', now],
-    ['อัตราผ่าน', results.length ? Math.round(passed.length / results.length * 100) : 0, '%', now],
-    ['Badge แจก', sheetToObjects('StudentBadges').length, 'อัน', now],
-    ['คะแนนเฉลี่ย', students.length ? Math.round(students.reduce((s, x) => s + (Number(x.total_points) || 0), 0) / students.length) : 0, 'คะแนน', now],
-    ['Chatbot ใช้', sheetToObjects('ChatbotLog').length, 'ครั้ง', now],
-    ['เช็คอิน', sheetToObjects('QRCheckin').length, 'ครั้ง', now],
-  ];
-  SS.getSheetByName('Dashboard').getRange(2, 1, vals.length, 4).setValues(vals);
-}
-
-function testAPI() {
-  Logger.log('นักเรียน: ' + apiGetAllStudents().length);
-  Logger.log('บทเรียน: ' + apiGetLessons().length);
-}
-
-// ============================================================
-// เชื่อม LINE Login (เฟส B) — จับคู่ LINE userId ↔ รหัสนักเรียน
-// ตารางเก็บชื่อ 'LineUsers' (สร้างให้อัตโนมัติถ้ายังไม่มี)
-// ============================================================
-function lineSheet() {
-  let sh = SS.getSheetByName('LineUsers');
-  if (!sh) {
-    sh = SS.insertSheet('LineUsers');
-    sh.appendRow(['line_user_id', 'student_id', 'display_name', 'linked_at']);
-  }
+// ===== ชีต (สร้างอัตโนมัติ) =====
+function ensureSheet(name, headers){
+  var sh = SS.getSheetByName(name);
+  if (!sh){ sh = SS.insertSheet(name); sh.appendRow(headers); }
+  else if (sh.getLastRow()===0){ sh.appendRow(headers); }
   return sh;
 }
+function S_Students(){ return ensureSheet('Students',
+  ['student_id','full_name','nickname','total_points','status','line_user_id','picture_url','created_at','updated_at']); }
+function S_Progress(){ return ensureSheet('Progress',['student_id','topic_id','stage','ts']); }
+function S_UnitStage(){ return ensureSheet('UnitStage',['student_id','unit_id','stage','ts']); }
+function S_Quiz(){ return ensureSheet('QuizResults',['student_id','topic_id','score','total','percent','passed','ts']); }
+function S_Badges(){ return ensureSheet('StudentBadges',['student_id','badge_id','ts']); }
+function S_Points(){ return ensureSheet('Points',['student_id','points','source','ref','detail','ts']); }
 
-// เช็คว่า LINE คนนี้ผูกกับนักเรียนคนไหนแล้วหรือยัง
-function apiGetStudentByLine(lineUid) {
-  if (!lineUid) return { linked: false };
-  const sh = SS.getSheetByName('LineUsers');
-  if (!sh) return { linked: false };
-  const rows = sheetToObjects('LineUsers').filter(r => r.line_user_id === lineUid);
-  if (!rows.length) return { linked: false };
-  const s = apiGetStudent(rows[0].student_id);
-  if (s.error) return { linked: false };
-  s.linked = true;
-  return s;
+function objs(sh){
+  var d = sh.getDataRange().getValues(); if (d.length<2) return [];
+  var h = d[0], out=[];
+  for (var i=1;i<d.length;i++){ var o={}; for (var j=0;j<h.length;j++) o[h[j]]=d[i][j]; out.push(o); }
+  return out;
 }
 
-// ถอดชื่อที่ส่งมาแบบ Base64 (เลี่ยงบั๊ก Apps Script ที่ถอดภาษาไทยใน URL ผิด)
-function decodeName(b64) {
+// ===== นักเรียน / ล็อกอิน =====
+function getStudents(){
+  return objs(S_Students()).filter(function(s){ return String(s.status)!=='inactive'; })
+    .map(function(s){ return { student_id:String(s.student_id), full_name:s.full_name, nickname:s.nickname }; });
+}
+function findRow(sid){
+  var sh=S_Students(), d=sh.getDataRange().getValues();
+  for (var i=1;i<d.length;i++){ if (String(d[i][0])===String(sid)) return { sh:sh, i:i+1, row:d[i] }; }
+  return null;
+}
+function getStudent(sid){
+  if (!sid) return { error:'ไม่พบรหัสนักเรียน' };
+  var r=findRow(sid); if (!r) return { error:'ไม่พบนักเรียน' };
+  return { student_id:String(sid), full_name:r.row[1], nickname:r.row[2],
+           total_points:Number(r.row[3])||0, picture_url:r.row[6]||'' };
+}
+function lineLogin(line, nameB64, picture){
+  if (!line) return { error:'ไม่พบ LINE ID' };
+  var name = decodeB64(nameB64);
+  var r=findRow(line);
+  var now=new Date();
+  if (r){
+    if (name){ r.sh.getRange(r.i,2).setValue(name); r.sh.getRange(r.i,3).setValue(name); }
+    if (picture) r.sh.getRange(r.i,7).setValue(picture);
+    r.sh.getRange(r.i,9).setValue(now);
+    return getStudent(line);
+  }
+  S_Students().appendRow([line, name||'ผู้ใช้ LINE', name||'', 0, 'active', line, picture||'', now, now]);
+  return getStudent(line);
+}
+function decodeB64(b64){
   if (!b64) return '';
   try { return Utilities.newBlob(Utilities.base64Decode(b64)).getDataAsString('UTF-8'); }
-  catch (e) { return b64; }
+  catch(e){ return b64; }
 }
 
-// ตั้ง/อัปเดตชื่อนักเรียน (เผื่อของเดิมเพี้ยน)
-function setStudentName(sid, name) {
-  const sheet = SS.getSheetByName('Students');
-  const data = sheet.getDataRange().getValues();
-  const idCol = data[0].indexOf('student_id');
-  const nameCol = data[0].indexOf('full_name');
-  const nickCol = data[0].indexOf('nickname');
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idCol]) === String(sid)) {
-      if (nameCol > -1) sheet.getRange(i + 1, nameCol + 1).setValue(name);
-      if (nickCol > -1) sheet.getRange(i + 1, nickCol + 1).setValue(name);
-      return;
-    }
-  }
+// ===== คะแนน =====
+function addPoints(sid, pts, source, ref, detail){
+  S_Points().appendRow([sid, pts, source, ref||'', detail||'', new Date()]);
+  var r=findRow(sid); if (r) r.sh.getRange(r.i,4).setValue((Number(r.row[3])||0)+pts);
 }
 
-// สมัคร/เข้าระบบด้วย LINE อัตโนมัติ — ใช้ LINE userId เป็นรหัสนักเรียนเลย
-// ครั้งแรก: สร้างนักเรียนใหม่จากชื่อ LINE / ครั้งต่อไป: อัปเดตชื่อให้ถูกแล้วเข้า
-function apiLineLogin(lineUid, nameB64) {
-  if (!lineUid) return { error: 'ไม่พบ LINE ID' };
-  const name = decodeName(nameB64);
-  let s = apiGetStudent(lineUid);
-  if (!s.error) {                               // เคยสมัครแล้ว
-    if (name) setStudentName(lineUid, name);    // ซ่อมชื่อที่เคยเพี้ยน
-    return apiGetStudent(lineUid);
+// ===== ความก้าวหน้า =====
+function hasProg(sid, topic, stage){
+  return objs(S_Progress()).some(function(p){
+    return String(p.student_id)===String(sid) && String(p.topic_id)===String(topic) && String(p.stage)===stage; });
+}
+function track(sid, topic, stage){    // S=วิดีโอ, M=eBook
+  if (!sid) return { error:'ไม่พบรหัสนักเรียน' };
+  if (!topic || (stage!=='S' && stage!=='M')) return { error:'ข้อมูลไม่ถูกต้อง' };
+  if (hasProg(sid, topic, stage)) return { ok:true, already:true };
+  S_Progress().appendRow([sid, topic, stage, new Date()]);
+  var pts = stage==='S'?POINTS.S:POINTS.M;
+  addPoints(sid, pts, stage==='S'?'video':'ebook', topic, 'เรื่อง '+topic);
+  recalcBadges(sid);
+  return { ok:true, awarded:pts };
+}
+function submitQuiz(sid, topic, answersJson){
+  if (!sid) return { error:'ไม่พบรหัสนักเรียน' };
+  var key = QUIZ_ANSWERS[topic];
+  if (!key) return { error:'ไม่พบชุดข้อสอบ '+topic };
+  var ans={}; try { ans=JSON.parse(answersJson); } catch(e){ ans={}; }
+  var total=0, score=0;
+  for (var qn in key){ total++; if (String(ans[qn])===String(key[qn])) score++; }
+  var percent = total? Math.round(score/total*100):0;
+  var passed = percent>=QUIZ_PASS;
+  S_Quiz().appendRow([sid, topic, score, total, percent, passed, new Date()]);
+  var earned=0;
+  if (passed && !hasProg(sid, topic, 'A')){
+    S_Progress().appendRow([sid, topic, 'A', new Date()]);
+    earned=POINTS.quiz; addPoints(sid, earned, 'quiz', topic, 'ผ่านแบบทดสอบ '+topic);
   }
-  const sheet = SS.getSheetByName('Students');
-  const headers = sheet.getDataRange().getValues()[0];
-  const row = headers.map(h => {
-    if (h === 'student_id') return lineUid;
-    if (h === 'full_name')  return name || 'ผู้ใช้ LINE';
-    if (h === 'nickname')   return name || '';
-    if (h === 'status')     return 'active';
-    if (h === 'total_points' || h === 'total_badges' || h === 'total_quiz_passed') return 0;
-    if (h === 'created_at' || h === 'joined_at') return new Date();
-    return '';
+  recalcBadges(sid);
+  return { score:score, total:total, percent:percent, passed:passed, earned:earned };
+}
+function unitStage(sid, unit, stage){
+  if (!sid || !unit) return { error:'ข้อมูลไม่ครบ' };
+  var exists = objs(S_UnitStage()).some(function(x){
+    return String(x.student_id)===String(sid)&&String(x.unit_id)===String(unit)&&String(x.stage)===stage; });
+  if (exists) return { ok:true, already:true };
+  S_UnitStage().appendRow([sid, unit, stage, new Date()]);
+  var pts = stage==='R'?POINTS.R:POINTS.T;
+  addPoints(sid, pts, stage==='R'?'reflect':'transfer', 'U'+unit, (stage==='R'?'สะท้อนคิด':'ถ่ายทอด')+' หน่วย '+unit);
+  recalcBadges(sid);
+  return { ok:true, awarded:pts };
+}
+function checkin(sid, code){
+  if (!code) return { error:'ไม่พบรหัสภารกิจ' };
+  return track(sid, String(code), 'S');
+}
+
+// ===== Badge =====
+function recalcBadges(sid){
+  var prog=objs(S_Progress()).filter(function(p){ return String(p.student_id)===String(sid); });
+  var us=objs(S_UnitStage()).filter(function(x){ return String(x.student_id)===String(sid); });
+  var qz=objs(S_Quiz()).filter(function(q){ return String(q.student_id)===String(sid); });
+  var have={}; prog.forEach(function(p){ have[p.topic_id+'|'+p.stage]=1; });
+  var uhave={}; us.forEach(function(x){ uhave[x.unit_id+'|'+x.stage]=1; });
+
+  function smaDone(t){ return have[t+'|S']&&have[t+'|M']&&have[t+'|A']; }
+  function unitAllSMA(u){ var ts=TOPICS_BY_UNIT[String(u)]||[]; return ts.length>0 && ts.every(smaDone); }
+  function unitComplete(u){ return unitAllSMA(u) && uhave[u+'|R'] && uhave[u+'|T']; }
+
+  var topicsDone=0; for (var u in TOPICS_BY_UNIT){ (TOPICS_BY_UNIT[u]).forEach(function(t){ if (smaDone(t)) topicsDone++; }); }
+  var reflectUnits={}; us.forEach(function(x){ if (String(x.stage)==='R') reflectUnits[x.unit_id]=1; });
+  var transferN={}; us.forEach(function(x){ if (String(x.stage)==='T') transferN[x.unit_id]=1; });
+  var best={}; qz.forEach(function(q){ var p=Number(q.percent)||0; if (!(q.topic_id in best)||p>best[q.topic_id]) best[q.topic_id]=p; });
+  var pcts=[]; for (var t in best) pcts.push(best[t]);
+  var avg = pcts.length? pcts.reduce(function(a,b){return a+b;},0)/pcts.length : 0;
+  function unitQuizAllPassed(u){ var ts=TOPICS_BY_UNIT[String(u)]||[]; return ts.length>0 && ts.every(function(t){ return (best[t]||0)>=QUIZ_PASS; }); }
+  var knowledge=false; for (var u2 in TOPICS_BY_UNIT){ if (unitQuizAllPassed(u2)) knowledge=true; }
+  var anyUnit=false; for (var u3 in TOPICS_BY_UNIT){ if (unitComplete(u3)) anyUnit=true; }
+
+  var earned={}; objs(S_Badges()).forEach(function(b){ if (String(b.student_id)===String(sid)) earned[b.badge_id]=1; });
+  function award(id){ if (earned[id]) return; S_Badges().appendRow([sid, id, new Date()]); earned[id]=1;
+    addPoints(sid, POINTS.badge, 'badge', id, 'ได้ Badge '+id); }
+
+  BADGES.forEach(function(b){
+    var ok=false;
+    if (b.rule==='knowledge') ok=knowledge;
+    else if (b.rule==='quiz_avg80') ok=(pcts.length>=5 && avg>=80);
+    else if (b.rule==='transfer') ok=Object.keys(transferN).length>=1;
+    else if (b.rule==='reflect3') ok=Object.keys(reflectUnits).length>=3;
+    else if (b.rule==='unit') ok=unitComplete(b.u);
+    else if (b.rule==='smartstar') ok=anyUnit;
+    else if (b.rule==='topics') ok=topicsDone>=b.n;
+    if (ok) award(b.id);
   });
-  sheet.appendRow(row);
-  return apiGetStudent(lineUid);
 }
 
-// ล้างข้อมูลจำลอง/ทดสอบ (STD00x + แถวทดสอบ) — เรียกครั้งเดียว
-function apiCleanup(key) {
-  if (key !== 'smartnano2026') return { error: 'unauthorized' };
-  const isTest = id => /^STD\d+$/i.test(id) || /^(Utest|Uenctest|Uabc|TESTUID)/.test(id);
-  let removed = 0;
-  const sheet = SS.getSheetByName('Students');
-  const data = sheet.getDataRange().getValues();
-  const idCol = data[0].indexOf('student_id');
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (isTest(String(data[i][idCol]))) { sheet.deleteRow(i + 1); removed++; }
-  }
-  const lu = SS.getSheetByName('LineUsers');
-  if (lu) {
-    const ld = lu.getDataRange().getValues();
-    for (let i = ld.length - 1; i >= 1; i--) {
-      if (isTest(String(ld[i][0]))) lu.deleteRow(i + 1);
-    }
-  }
-  return { removed };
+// ===== รวมความก้าวหน้า =====
+function getProgress(sid){
+  if (!sid) return { error:'ไม่พบรหัสนักเรียน' };
+  var st=getStudent(sid); if (st.error) return st;
+  var prog=objs(S_Progress()).filter(function(p){ return String(p.student_id)===String(sid); });
+  var us=objs(S_UnitStage()).filter(function(x){ return String(x.student_id)===String(sid); });
+  var qz=objs(S_Quiz()).filter(function(q){ return String(q.student_id)===String(sid); });
+  var badges=objs(S_Badges()).filter(function(b){ return String(b.student_id)===String(sid); }).map(function(b){ return b.badge_id; });
+  var topics={};
+  prog.forEach(function(p){ var t=p.topic_id; topics[t]=topics[t]||{}; topics[t][p.stage]=true; });
+  var best={}; qz.forEach(function(q){ var p=Number(q.percent)||0; if (!(q.topic_id in best)||p>best[q.topic_id]) best[q.topic_id]=p; });
+  for (var t in best){ topics[t]=topics[t]||{}; topics[t].quiz=best[t]; }
+  var units={}; us.forEach(function(x){ units[x.unit_id]=units[x.unit_id]||{}; units[x.unit_id][x.stage]=true; });
+  var lb=getLeaderboard(); var rank=0;
+  for (var i=0;i<lb.length;i++){ if (String(lb[i].student_id)===String(sid)){ rank=lb[i].rank; break; } }
+  return { student_id:String(sid), full_name:st.full_name, picture_url:st.picture_url,
+           total_points:st.total_points, topics:topics, units:units, badges:badges, rank:rank };
 }
 
-// ผูก LINE คนนี้เข้ากับรหัสนักเรียน (ทำครั้งเดียวตอนเข้าครั้งแรก)
-function apiLinkLine(lineUid, sid, name) {
-  if (!lineUid) return { error: 'ไม่พบ LINE ID' };
-  if (!sid)     return { error: 'กรุณาเลือกชื่อนักเรียน' };
-  const sheet = lineSheet();
-  const existing = sheetToObjects('LineUsers').filter(r => r.line_user_id === lineUid);
-  if (existing.length) {
-    const s0 = apiGetStudent(existing[0].student_id);
-    if (!s0.error) { s0.linked = true; s0.already = true; return s0; }
-  }
-  const s = apiGetStudent(sid);
-  if (s.error) return { error: 'ไม่พบนักเรียนรหัสนี้' };
-  sheet.appendRow([lineUid, sid, name || '', new Date()]);
-  s.linked = true;
-  return s;
+function getLeaderboard(){
+  var arr=objs(S_Students()).filter(function(s){ return String(s.status)!=='inactive'; })
+    .map(function(s){ return { student_id:String(s.student_id), full_name:s.full_name,
+      total_points:Number(s.total_points)||0 }; })
+    .sort(function(a,b){ return b.total_points-a.total_points; });
+  arr.forEach(function(s,i){ s.rank=i+1; });
+  return arr;
 }
