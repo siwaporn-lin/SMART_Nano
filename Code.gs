@@ -254,15 +254,28 @@ function getConfig(key){
   for (var i=1;i<d.length;i++){ if (String(d[i][0])===key) return d[i][1]; }
   return '';
 }
+// ความจำระยะสั้น: ดึงบทสนทนาล่าสุดของผู้ใช้คนนั้นจาก ChatLog
+function recentHistory(uid, n){
+  if (!uid) return [];
+  var rows = objs(S_Chat()).filter(function(r){ return String(r.student_id)===String(uid); });
+  if (rows.length > n) rows = rows.slice(rows.length - n);
+  var out = [];
+  rows.forEach(function(r){
+    if (r.message) out.push({ role:'user',  parts:[{ text:String(r.message) }] });
+    if (r.reply)   out.push({ role:'model', parts:[{ text:String(r.reply) }] });
+  });
+  return out;
+}
 // ถาม Gemini (ใช้ร่วมกันทั้งในแอปและใน LINE) — คืน {reply} หรือ {error}
-function geminiAsk(message){
+function geminiAsk(message, uid){
   message = (message||'').toString().trim();
   if (!message) return { error:'กรุณาพิมพ์คำถาม' };
   var key = getConfig('gemini_api_key');
   if (!key) return { error:'ยังไม่ได้ตั้งค่า Gemini API Key (ใส่ในแท็บ Config ช่อง key = gemini_api_key)' };
   var prompt = getConfig('chatbot_prompt') ||
-    'คุณคือ "ครูประกันภัย" ผู้ช่วยสอนวิชาการประกันภัยระดับ ปวช. ตอบเป็นภาษาไทยที่สุภาพ เป็นกันเอง เข้าใจง่าย ' +
-    'ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ' +
+    'คุณคือ "ครูรุ่งทิวา AI" เป็นคุณครูผู้หญิงที่สอนวิชาการประกันภัยให้นักเรียนอาชีวศึกษา (ปวช.) พูดจาสุภาพ อบอุ่น เป็นกันเอง ' +
+    'แทนตัวเองว่า "ครู" และลงท้ายประโยคด้วย "ค่ะ" หรือ "นะคะ" เสมอ (เป็นผู้หญิง ห้ามใช้ครับ) ' +
+    'ตอบเป็นภาษาไทยเข้าใจง่าย ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ' +
     'ตอบเป็นข้อความธรรมดา อ่านง่าย ห้ามใช้สัญลักษณ์ Markdown เช่น ** * # หรือหัวข้อ ความยาวพอเหมาะประมาณ 2-5 ประโยค';
   // ลองหลายรุ่นอัตโนมัติ จนเจอรุ่นที่ใช้ได้ (บาง key ไม่มีสิทธิ์/โควตาบางรุ่น)
   var models = [];
@@ -270,8 +283,10 @@ function geminiAsk(message){
   if (pref) models.push(String(pref).trim());
   ['gemini-2.0-flash-lite','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest','gemini-2.5-flash','gemini-1.5-flash']
     .forEach(function(m){ if (models.indexOf(m) < 0) models.push(m); });
+  var contents = recentHistory(uid, 5);           // ความจำ: 5 คู่สนทนาล่าสุด
+  contents.push({ role:'user', parts:[{ text: message }] });
   var payload = JSON.stringify({
-    contents:[{ role:'user', parts:[{ text: message }] }],
+    contents: contents,
     systemInstruction:{ parts:[{ text: prompt }] },
     generationConfig:{ temperature:0.4, maxOutputTokens:4096 }
   });
@@ -301,7 +316,7 @@ function cleanText(t){
 
 // แชทในแอป (JSONP)
 function chatbot(sid, message){
-  var r = geminiAsk(message);
+  var r = geminiAsk(message, sid);
   if (r.reply) S_Chat().appendRow([sid||'', message, r.reply, new Date()]);
   return r;
 }
@@ -313,7 +328,7 @@ function handleLineWebhook(events){
   (events || []).forEach(function(ev){
     if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken){
       var uid = (ev.source && ev.source.userId) || '';
-      var r = geminiAsk(ev.message.text);
+      var r = geminiAsk(ev.message.text, uid);
       var text = r.reply || ('❌ ' + (r.error || 'ตอบไม่ได้'));
       lineReply(ev.replyToken, text, token);
       S_Chat().appendRow([uid, ev.message.text, text, new Date()]);
