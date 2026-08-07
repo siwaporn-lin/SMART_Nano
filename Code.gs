@@ -261,8 +261,9 @@ function geminiAsk(message){
   var key = getConfig('gemini_api_key');
   if (!key) return { error:'ยังไม่ได้ตั้งค่า Gemini API Key (ใส่ในแท็บ Config ช่อง key = gemini_api_key)' };
   var prompt = getConfig('chatbot_prompt') ||
-    'คุณคือ "ครูประกันภัย" ผู้ช่วยสอนวิชาการประกันภัยระดับ ปวช. ตอบเป็นภาษาไทยที่สุภาพ เป็นกันเอง เข้าใจง่าย กระชับ ยกตัวอย่างใกล้ตัวนักเรียน ' +
-    'ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ไม่ต้องยาวเกินไป';
+    'คุณคือ "ครูประกันภัย" ผู้ช่วยสอนวิชาการประกันภัยระดับ ปวช. ตอบเป็นภาษาไทยที่สุภาพ เป็นกันเอง เข้าใจง่าย ' +
+    'ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ' +
+    'ตอบเป็นข้อความธรรมดา อ่านง่าย ห้ามใช้สัญลักษณ์ Markdown เช่น ** * # หรือหัวข้อ ความยาวพอเหมาะประมาณ 2-5 ประโยค';
   // ลองหลายรุ่นอัตโนมัติ จนเจอรุ่นที่ใช้ได้ (บาง key ไม่มีสิทธิ์/โควตาบางรุ่น)
   var models = [];
   var pref = getConfig('gemini_model');
@@ -272,7 +273,7 @@ function geminiAsk(message){
   var payload = JSON.stringify({
     contents:[{ role:'user', parts:[{ text: message }] }],
     systemInstruction:{ parts:[{ text: prompt }] },
-    generationConfig:{ temperature:0.4, maxOutputTokens:600 }
+    generationConfig:{ temperature:0.4, maxOutputTokens:2048, thinkingConfig:{ thinkingBudget:0 } }
   });
   var lastErr = '';
   for (var i = 0; i < models.length; i++){
@@ -280,12 +281,22 @@ function geminiAsk(message){
     try {
       var res = UrlFetchApp.fetch(url, { method:'post', contentType:'application/json', payload:payload, muteHttpExceptions:true });
       var data = JSON.parse(res.getContentText());
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
-        return { reply: data.candidates[0].content.parts[0].text, model: models[i] };
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts){
+        var txt = data.candidates[0].content.parts.map(function(p){ return p.text || ''; }).join('').trim();
+        if (txt) return { reply: cleanText(txt), model: models[i] };
+      }
       if (data.error){ lastErr = (data.error.message||''); continue; }   // รุ่นนี้ไม่ได้ ลองรุ่นถัดไป
     } catch(err){ lastErr = String(err); }
   }
   return { error:'AI ขัดข้อง (ลองหลายรุ่นแล้วไม่สำเร็จ): ' + lastErr };
+}
+// ตัดสัญลักษณ์ Markdown ออก (LINE ไม่รองรับ)
+function cleanText(t){
+  return String(t)
+    .replace(/\*\*/g, '')
+    .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+    .replace(/^\s{0,3}[\*\-]\s+/gm, '• ')
+    .trim();
 }
 
 // แชทในแอป (JSONP)
