@@ -120,8 +120,10 @@ function showProfile(sid, profile){
     location.href='go.html?topic='+encodeURIComponent(qp.get('mission')||'')+'&type=checkin';
     return;
   }
-  if (qp.get('goto')==='chat'){ location.href='chat.html'; return; }       // ทางลัดเข้าแชท AI
-  if (qp.get('goto')==='learn'){ location.href='learn.html'; return; }     // ทางลัดเข้าบทเรียน
+  if (qp.get('goto')==='chat'){ location.href='chat.html'; return; }        // แชท AI
+  if (qp.get('goto')==='learn'){ location.href='learn.html'; return; }      // บทเรียน
+  if (qp.get('goto')==='badges'){ location.href='badges.html'; return; }    // เหรียญตรา
+  if (qp.get('goto')==='rank'){ location.href='leaderboard.html'; return; } // อันดับ
   document.getElementById('loginView').style.display='none';
   document.getElementById('profileView').style.display='block';
   buildNav('home');
