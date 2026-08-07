@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>วิธีใช้งาน · SMART Nano</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=21">
+<style>
+  .step-row{display:flex;gap:12px;align-items:flex-start;margin:10px 0;}
+  .step-badge2{width:40px;height:40px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;}
+  .pt{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.9rem;}
+  .pt:last-child{border-bottom:none;}
+  .pt b{color:var(--purple);}
+</style>
+</head>
+<body>
+<div class="header"><h1>❓ วิธีใช้งาน</h1><p>เก็บดาว พิชิตภารกิจ ไปด้วยกัน!</p></div>
+<div class="container">
+
+  <div class="card fade-in">
+    <h2>🌟 เรียน 1 เรื่อง = เดิน 3 ขั้น</h2>
+    <div class="step-row"><div class="step-badge2" style="background:#6366F1">S</div>
+      <div><b>ดูวิดีโอ</b><br><span class="muted">กดดูคลิปสั้นของเรื่องนั้น</span></div></div>
+    <div class="step-row"><div class="step-badge2" style="background:#EC4899">M</div>
+      <div><b>อ่าน eBook</b><br><span class="muted">เปิดหนังสือ/อินโฟกราฟิก</span></div></div>
+    <div class="step-row"><div class="step-badge2" style="background:#10B981">A</div>
+      <div><b>ทำแบบทดสอบ</b><br><span class="muted">ตอบ 5 ข้อ ผ่านแล้วได้คะแนน</span></div></div>
+    <p class="muted" style="margin-top:6px;">ครบ 3 ขั้น = พิชิตเรื่องนั้น ⭐ พอทำครบทั้งหน่วยจะปลดล็อก <b>สะท้อนคิด (R)</b> และ <b>ถ่ายทอด (T)</b></p>
+  </div>
+
+  <div class="card fade-in">
+    <h2>💰 คะแนนได้จากอะไร</h2>
+    <div class="pt"><span>ดูวิดีโอ (S)</span><b>+5</b></div>
+    <div class="pt"><span>อ่าน eBook (M)</span><b>+5</b></div>
+    <div class="pt"><span>ทำแบบทดสอบผ่าน (A)</span><b>+10</b></div>
+    <div class="pt"><span>สะท้อนคิดจบหน่วย (R)</span><b>+15</b></div>
+    <div class="pt"><span>ถ่ายทอด/แชร์ (T)</span><b>+20</b></div>
+    <div class="pt"><span>ได้เหรียญตรา</span><b>+20</b></div>
+  </div>
+
+  <div class="card fade-in">
+    <h2>🎖️ เหรียญตรา &amp; อันดับ</h2>
+    <p class="muted">สะสมคะแนนเพื่อ<b>เลื่อนระดับ</b> (มือใหม่ → ปรมาจารย์), ปลดล็อก <b>เหรียญสมรรถนะ</b> และไต่ <b>อันดับ</b> แข่งกับเพื่อนๆ 🏆</p>
+  </div>
+
+  <a class="btn pink" href="learn.html">📚 เริ่มเรียนเลย!</a>
+  <a class="btn gray" href="index.html">🏠 กลับหน้าโปรไฟล์</a>
+</div>
+
+<script src="config.js?v=21"></script>
+<script src="data.js?v=21"></script>
+<script src="app.js?v=21"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function(){ if (getSid()) buildNav(''); });
+</script>
+</body>
+</html>

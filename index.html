@@ -124,6 +124,7 @@ function showProfile(sid, profile){
   if (qp.get('goto')==='learn'){ location.href='learn.html'; return; }      // บทเรียน
   if (qp.get('goto')==='badges'){ location.href='badges.html'; return; }    // เหรียญตรา
   if (qp.get('goto')==='rank'){ location.href='leaderboard.html'; return; } // อันดับ
+  if (qp.get('goto')==='help'){ location.href='help.html'; return; }        // วิธีใช้งาน
   document.getElementById('loginView').style.display='none';
   document.getElementById('profileView').style.display='block';
   buildNav('home');
