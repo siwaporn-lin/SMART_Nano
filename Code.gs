@@ -263,23 +263,29 @@ function geminiAsk(message){
   var prompt = getConfig('chatbot_prompt') ||
     'คุณคือ "ครูประกันภัย" ผู้ช่วยสอนวิชาการประกันภัยระดับ ปวช. ตอบเป็นภาษาไทยที่สุภาพ เป็นกันเอง เข้าใจง่าย กระชับ ยกตัวอย่างใกล้ตัวนักเรียน ' +
     'ตอบเฉพาะเรื่องการประกันภัยและเนื้อหาในบทเรียนเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวข้อง ให้ปฏิเสธอย่างสุภาพและชวนกลับมาถามเรื่องประกันภัย ไม่ต้องยาวเกินไป';
-  var model = getConfig('gemini_model') || 'gemini-2.0-flash';
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
-  try {
-    var res = UrlFetchApp.fetch(url, { method:'post', contentType:'application/json',
-      payload: JSON.stringify({
-        contents:[{ role:'user', parts:[{ text: message }] }],
-        systemInstruction:{ parts:[{ text: prompt }] },
-        generationConfig:{ temperature:0.4, maxOutputTokens:600 }
-      }), muteHttpExceptions:true });
-    var data = JSON.parse(res.getContentText());
-    var reply = '';
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
-      reply = data.candidates[0].content.parts[0].text;
-    else if (data.error) return { error:'AI ขัดข้อง: ' + (data.error.message||'') };
-    if (!reply) reply = 'ขออภัยค่ะ ตอบไม่ได้ในตอนนี้ ลองถามใหม่อีกครั้งนะคะ';
-    return { reply: reply };
-  } catch(err) { return { error:'AI ตอบไม่ได้: ' + String(err) }; }
+  // ลองหลายรุ่นอัตโนมัติ จนเจอรุ่นที่ใช้ได้ (บาง key ไม่มีสิทธิ์/โควตาบางรุ่น)
+  var models = [];
+  var pref = getConfig('gemini_model');
+  if (pref) models.push(String(pref).trim());
+  ['gemini-2.0-flash-lite','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-flash-latest','gemini-2.5-flash','gemini-1.5-flash']
+    .forEach(function(m){ if (models.indexOf(m) < 0) models.push(m); });
+  var payload = JSON.stringify({
+    contents:[{ role:'user', parts:[{ text: message }] }],
+    systemInstruction:{ parts:[{ text: prompt }] },
+    generationConfig:{ temperature:0.4, maxOutputTokens:600 }
+  });
+  var lastErr = '';
+  for (var i = 0; i < models.length; i++){
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent?key=' + encodeURIComponent(key);
+    try {
+      var res = UrlFetchApp.fetch(url, { method:'post', contentType:'application/json', payload:payload, muteHttpExceptions:true });
+      var data = JSON.parse(res.getContentText());
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
+        return { reply: data.candidates[0].content.parts[0].text, model: models[i] };
+      if (data.error){ lastErr = (data.error.message||''); continue; }   // รุ่นนี้ไม่ได้ ลองรุ่นถัดไป
+    } catch(err){ lastErr = String(err); }
+  }
+  return { error:'AI ขัดข้อง (ลองหลายรุ่นแล้วไม่สำเร็จ): ' + lastErr };
 }
 
 // แชทในแอป (JSONP)
