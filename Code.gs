@@ -28,7 +28,19 @@ function doGet(e){
   return ContentService.createTextOutput(JSON.stringify(out))
       .setMimeType(ContentService.MimeType.JSON);
 }
-function doPost(e){ return doGet(e); }
+function doPost(e){
+  // ถ้าเป็น webhook จาก LINE (มี events) -> ให้ AI ตอบในแชท
+  try {
+    if (e && e.postData && e.postData.contents){
+      var body = JSON.parse(e.postData.contents);
+      if (body && body.events){
+        handleLineWebhook(body.events);
+        return ContentService.createTextOutput('OK');
+      }
+    }
+  } catch(err){}
+  return doGet(e);
+}
 
 function process(e){
   var p = (e && e.parameter) || {};
@@ -242,7 +254,8 @@ function getConfig(key){
   for (var i=1;i<d.length;i++){ if (String(d[i][0])===key) return d[i][1]; }
   return '';
 }
-function chatbot(sid, message){
+// ถาม Gemini (ใช้ร่วมกันทั้งในแอปและใน LINE) — คืน {reply} หรือ {error}
+function geminiAsk(message){
   message = (message||'').toString().trim();
   if (!message) return { error:'กรุณาพิมพ์คำถาม' };
   var key = getConfig('gemini_api_key');
@@ -265,7 +278,37 @@ function chatbot(sid, message){
       reply = data.candidates[0].content.parts[0].text;
     else if (data.error) return { error:'AI ขัดข้อง: ' + (data.error.message||'') };
     if (!reply) reply = 'ขออภัยค่ะ ตอบไม่ได้ในตอนนี้ ลองถามใหม่อีกครั้งนะคะ';
-    S_Chat().appendRow([sid||'', message, reply, new Date()]);
     return { reply: reply };
   } catch(err) { return { error:'AI ตอบไม่ได้: ' + String(err) }; }
+}
+
+// แชทในแอป (JSONP)
+function chatbot(sid, message){
+  var r = geminiAsk(message);
+  if (r.reply) S_Chat().appendRow([sid||'', message, r.reply, new Date()]);
+  return r;
+}
+
+// ===== LINE Messaging API: ให้ AI ตอบในแชท LINE โดยตรง =====
+// รับ webhook จาก LINE (POST) แล้วให้ Gemini ตอบกลับในห้องแชท
+function handleLineWebhook(events){
+  var token = getConfig('channel_access_token');
+  (events || []).forEach(function(ev){
+    if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken){
+      var uid = (ev.source && ev.source.userId) || '';
+      var r = geminiAsk(ev.message.text);
+      var text = r.reply || ('❌ ' + (r.error || 'ตอบไม่ได้'));
+      lineReply(ev.replyToken, text, token);
+      S_Chat().appendRow([uid, ev.message.text, text, new Date()]);
+    }
+  });
+}
+function lineReply(replyToken, text, token){
+  if (!token) return;
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+    method:'post', contentType:'application/json',
+    headers:{ Authorization:'Bearer ' + token },
+    payload: JSON.stringify({ replyToken: replyToken, messages:[{ type:'text', text: (text||'').substring(0,4900) }] }),
+    muteHttpExceptions:true
+  });
 }
