@@ -273,7 +273,7 @@ function geminiAsk(message){
   var payload = JSON.stringify({
     contents:[{ role:'user', parts:[{ text: message }] }],
     systemInstruction:{ parts:[{ text: prompt }] },
-    generationConfig:{ temperature:0.4, maxOutputTokens:2048, thinkingConfig:{ thinkingBudget:0 } }
+    generationConfig:{ temperature:0.4, maxOutputTokens:4096 }
   });
   var lastErr = '';
   for (var i = 0; i < models.length; i++){
